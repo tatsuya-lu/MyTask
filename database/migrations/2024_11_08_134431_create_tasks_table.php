@@ -13,13 +13,34 @@ return new class extends Migration
     {
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')
+                ->constrained()
+                ->onDelete('cascade')
+                ->name('fk_tasks_user');
             $table->string('title');
             $table->text('description')->nullable();
             $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
             $table->enum('status', ['not_started', 'in_progress', 'completed'])->default('not_started');
             $table->integer('progress')->default(0);
             $table->date('due_date')->nullable();
+            $table->foreignId('team_id')
+                ->nullable()
+                ->constrained()
+                ->onDelete('cascade')
+                ->name('fk_tasks_team');
+            $table->boolean('is_archived')->default(false);
+            $table->boolean('is_premium_feature')->default(false);
+            $table->json('shared_with')->nullable();
+            $table->integer('sort_order')->default(0);
+            $table->boolean('notify_before_due')->default(true);
+            $table->integer('notify_days_before')->default(1);
+
+            $table->index(['user_id', 'status'], 'idx_tasks_user_status');
+            $table->index(['user_id', 'due_date'], 'idx_tasks_user_due_date');
+            $table->index(['team_id', 'status'], 'idx_tasks_team_status');
+            $table->index(['is_archived'], 'idx_tasks_archived');
+            $table->index(['sort_order'], 'idx_tasks_sort_order');
+
             $table->timestamps();
             $table->softDeletes();
         });

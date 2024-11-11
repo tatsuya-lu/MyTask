@@ -17,7 +17,9 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->boolean('is_premium')->default(false);
             $table->rememberToken();
+            $table->timestamp('premium_expires_at')->nullable();
             $table->timestamps();
         });
 

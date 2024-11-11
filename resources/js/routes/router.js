@@ -26,7 +26,7 @@ const routes = [
         meta: { requiresAuth: true }
     },
     {
-        path: '/tasks/calender',
+        path: '/tasks/calendar',
         name: 'task-calender',
         component: () => import('../components/Tasks/TaskCalender.vue'),
         meta: { requiresAuth: true }

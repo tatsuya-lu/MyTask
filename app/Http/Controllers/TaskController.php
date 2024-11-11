@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Requests\TaskRequest;
 use App\Models\Task;
-use App\Service\TaskService;
+use App\Services\TaskService;
 
 class TaskController extends Controller
 {
@@ -18,18 +18,51 @@ class TaskController extends Controller
 
     public function index(Request $request)
     {
-        $tasks = Task::with('tags')
-            ->where('user_id', auth()->id())
-            ->when($request->status, function ($query, $status) {
-                return $query->where('status', $status);
+        $query = Task::with(['tags', 'team'])
+            ->where(function ($q) {
+                $q->where('user_id', auth()->id())
+                    ->orWhereIn('team_id', auth()->user()->teams->pluck('id'));
             })
-            ->when($request->priority, function ($query, $priority) {
-                return $query->where('priority', $priority);
+            ->when($request->status, function ($q, $status) {
+                return $q->where('status', $status);
             })
-            ->orderBy('due_date', 'asc')
-            ->paginate(10);
+            ->when($request->priority, function ($q, $priority) {
+                return $q->where('priority', $priority);
+            })
+            ->when($request->team_id, function ($q, $teamId) {
+                return $q->where('team_id', $teamId);
+            })
+            ->when($request->is_archived, function ($q) {
+                return $q->where('is_archived', true);
+            }, function ($q) {
+                return $q->where('is_archived', false);
+            });
 
-        return response()->json($tasks);
+        return response()->json($query->paginate(10));
+    }
+
+    public function share(Request $request, Task $task)
+    {
+        $this->authorize('share', $task);
+
+        $validated = $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id'
+        ]);
+
+        $task->shared_with = $validated['user_ids'];
+        $task->save();
+
+        return response()->json($task);
+    }
+
+    public function archive(Task $task)
+    {
+        $this->authorize('archive', $task);
+
+        $task->update(['is_archived' => true]);
+
+        return response()->json(['message' => 'タスクをアーカイブしました']);
     }
 
     public function store(TaskRequest $request)
