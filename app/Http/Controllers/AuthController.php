@@ -27,20 +27,25 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function login(LoginRequest $request)
+    public function login(Request $request)
     {
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            $token = $user->createToken('auth-token')->plainTextToken;
+
             return response()->json([
-                'message' => 'メールアドレスまたはパスワードが間違っています。'
-            ], 401);
+                'token' => $token,
+                'user' => $user
+            ]);
         }
 
-        $user = User::where('email', $request->email)->firstOrFail();
-        $token = $user->createToken('auth_token')->plainTextToken;
-
         return response()->json([
-            'user' => $user,
-            'token' => $token
-        ]);
+            'message' => 'Invalid credentials'
+        ], 401);
     }
 }
