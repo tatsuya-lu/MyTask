@@ -40,9 +40,8 @@
 
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
-import axios from 'axios';
+import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -53,29 +52,20 @@ const errors = ref({});
 const isLoading = ref(false);
 
 const handleSubmit = async () => {
-    isLoading.value = true;
     errors.value = {};
+    isLoading.value = true;
     
     try {
-        // CSRFトークンを取得
-        await axios.get('/sanctum/csrf-cookie');
-        
-        // ログインリクエスト
-        const response = await axios.post('/api/login', {
+        const success = await authStore.login({
             email: email.value,
             password: password.value
         });
-
-        if (response.data.token) {
-            localStorage.setItem('token', response.data.token);
-            axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-            
-            await authStore.fetchUser();
-            await router.push('/tasks');
+        
+        if (success) {
+            router.push({ name: 'tasks' });
         }
     } catch (error) {
-        console.error('Login error:', error);
-        errors.value = { error: error.response?.data?.message || 'ログインに失敗しました。' };
+        errors.value.error = error.message;
     } finally {
         isLoading.value = false;
     }

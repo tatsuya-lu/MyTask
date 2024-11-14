@@ -39,48 +39,54 @@
                 こちら
             </router-link>
         </p>
+
+        <p class="mt-4 text-center">
+            すでにアカウントをお持ちの方は
+            <router-link :to="{ name: 'login' }" class="text-blue-500 hover:underline">
+                こちら
+            </router-link>
+        </p>
     </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../../stores/auth'
+import { ref } from 'vue';
+import { useAuthStore } from '../../stores/auth';
+import { useRouter } from 'vue-router';
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
-const name = ref('')
-const email = ref('')
-const password = ref('')
-const password_confirmation = ref('')
-const error = ref('')
-const isLoading = ref(false)
+const name = ref('');
+const email = ref('');
+const password = ref('');
+const password_confirmation = ref('');
+const error = ref('');
+const isLoading = ref(false);
 
 const handleSubmit = async () => {
-    try {
-        isLoading.value = true;
-        error.value = '';
-        if (password.value !== password_confirmation.value) {
-            error.value = 'パスワードが一致しません。';
-            return;
-        }
+    error.value = '';
+    isLoading.value = true;
 
-        await authStore.register({
+    if (password.value !== password_confirmation.value) {
+        error.value = 'パスワードが一致しません';
+        isLoading.value = false;
+        return;
+    }
+
+    try {
+        const success = await authStore.register({
             name: name.value,
             email: email.value,
             password: password.value,
             password_confirmation: password_confirmation.value
         });
-        router.push({ name: 'home' });
-    } catch (e) {
-        console.error('Registration error:', e);
-        if (e.response?.data?.errors) {
-            const errors = Object.values(e.response.data.errors).flat();
-            error.value = errors.join('\n');
-        } else {
-            error.value = e.response?.data?.message || 'アカウント登録に失敗しました。';
+
+        if (success) {
+            router.push({ name: 'tasks' });
         }
+    } catch (e) {
+        error.value = e.message;
     } finally {
         isLoading.value = false;
     }
