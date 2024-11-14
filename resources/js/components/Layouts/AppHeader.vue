@@ -31,5 +31,17 @@
 </template>
 
 <script setup>
+import { useAuthStore } from '../../stores/auth'
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 
+const authStore = useAuthStore()
+const router = useRouter()
+
+const isLoggedIn = computed(() => authStore.isAuthenticated)
+
+const handleLogout = async () => {
+    await authStore.logout()
+    router.push({ name: 'login' })
+}
 </script>

@@ -27,25 +27,26 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
-
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-            $token = $user->createToken('auth-token')->plainTextToken;
+        if (Auth::attempt($request->only('email', 'password'))) {
+            $request->session()->regenerate();
 
             return response()->json([
-                'token' => $token,
-                'user' => $user
+                'user' => Auth::user()
             ]);
         }
 
         return response()->json([
-            'message' => 'Invalid credentials'
+            'message' => '認証に失敗しました'
         ], 401);
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+        Auth::guard('web')->logout();
+
+        return response()->json(['message' => 'ログアウトに成功しました']);
     }
 }

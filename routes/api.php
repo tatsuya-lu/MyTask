@@ -5,9 +5,10 @@ use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\Request;
 
-// 認証不要のルート
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('throttle:auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+});
 
 // 認証が必要なルート
 Route::middleware('auth:sanctum')->group(function () {
