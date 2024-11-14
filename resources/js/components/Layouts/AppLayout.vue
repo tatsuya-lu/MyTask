@@ -1,7 +1,7 @@
 <template>
-    <div>
+    <div class="min-h-screen bg-gray-100">
         <AppHeader />
-        <main>
+        <main class="container mx-auto px-4 py-6">
             <slot></slot>
         </main>
     </div>
