@@ -71,36 +71,27 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useAuthStore } from '../../stores/auth';
-import { api } from '../../utils/axios';
+import { onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useTaskStore } from '../../stores/task';
+import { useRouter } from 'vue-router';
 
-const authStore = useAuthStore();
-const tasks = ref([]);
-const isLoading = ref(true);
-const error = ref(null);
+const taskStore = useTaskStore();
+const router = useRouter();
 
-const fetchTasks = async () => {
-    try {
-        const response = await api.get('/tasks');
-        tasks.value = response.data;
-    } catch (e) {
-        error.value = '読み込みに失敗しました';
-    } finally {
-        isLoading.value = false;
-    }
-};
+const { tasks, isLoading, error } = storeToRefs(taskStore);
+
+onMounted(async () => {
+    await taskStore.fetchTasks();
+});
 
 const deleteTask = async (taskId) => {
-    if (!confirm('このタスクを削除してもよろしいですか？')) return;
-    
-    try {
-        await api.delete(`/tasks/${taskId}`);
-        tasks.value = tasks.value.filter(task => task.id !== taskId);
-    } catch (e) {
-        error.value = '削除に失敗しました';
+    if (confirm('このタスクを削除してもよろしいですか？')) {
+        try {
+            await taskStore.deleteTask(taskId);
+        } catch (error) {
+            console.error('タスクの削除に失敗しました:', error);
+        }
     }
 };
-
-onMounted(fetchTasks);
 </script>
