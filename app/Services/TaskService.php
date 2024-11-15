@@ -10,24 +10,64 @@ class TaskService
     public function createTask(array $data)
     {
         $data['user_id'] = Auth::id();
+        
+        $tags = $data['tags'] ?? [];
+        unset($data['tags']);
+        
         $task = Task::create($data);
 
-        if (isset($data['tags'])) {
-            $task->tags()->sync($data['tags']);
+        if (!empty($tags)) {
+            $task->tags()->sync($tags);
         }
 
-        return $task;
+        return $task->load(['tags', 'team']);
     }
 
     public function updateTask(Task $task, array $data)
     {
+        $tags = $data['tags'] ?? [];
+        unset($data['tags']);
+        
         $task->update($data);
 
-        if (isset($data['tags'])) {
-            $task->tags()->sync($data['tags']);
+        if (isset($tags)) {
+            $task->tags()->sync($tags);
         }
 
-        return $task;
+        return $task->load(['tags', 'team']);
+    }
+
+    public function getFilteredTasks(array $filters = [])
+    {
+        $query = Task::with(['tags', 'team'])
+            ->where(function ($q) {
+                $q->where('user_id', auth()->id())
+                    ->orWhereIn('team_id', auth()->user()->teams->pluck('id'));
+            });
+
+        if (!empty($filters['tag_ids'])) {
+            $query->whereHas('tags', function ($q) use ($filters) {
+                $q->whereIn('tags.id', $filters['tag_ids']);
+            });
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['priority'])) {
+            $query->where('priority', $filters['priority']);
+        }
+
+        if (!empty($filters['team_id'])) {
+            $query->where('team_id', $filters['team_id']);
+        }
+
+        if (isset($filters['is_archived'])) {
+            $query->where('is_archived', $filters['is_archived']);
+        }
+
+        return $query->orderBy('created_at', 'desc');
     }
 
     public function deleteTask(Task $task)
