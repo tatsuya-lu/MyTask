@@ -24,7 +24,7 @@ export const useTaskStore = defineStore('task', {
             } finally {
                 this.isLoading = false;
             }
-        }
+        },
 
         async createTask(taskData) {
             this.isLoading = true;
