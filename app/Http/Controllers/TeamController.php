@@ -84,7 +84,6 @@ class TeamController extends Controller
     {
         $this->authorize('removeMember', $team);
 
-        // オーナーは削除できない
         if ($user->id === $team->owner_id) {
             return response()->json(['message' => 'チームオーナーは削除できません。'], 422);
         }

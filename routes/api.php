@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TagController;
+use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -30,4 +32,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // タスクステータス更新
     Route::patch('/tasks/{task}/status', [TaskController::class, 'updateStatus']);
     Route::patch('/tasks/{task}/priority', [TaskController::class, 'updatePriority']);
+});
+
+Route::middleware(['auth:sanctum', 'premium'])->group(function () {
+    Route::apiResource('teams', TeamController::class);
+    Route::post('/teams/{team}/members', [TeamController::class, 'addMember']);
+    Route::delete('/teams/{team}/members/{user}', [TeamController::class, 'removeMember']);
 });

@@ -5,8 +5,12 @@ import { createRouter, createWebHistory } from "vue-router";
 import App from './App.vue';
 import Login from "./components/Auth/Login.vue";
 import Register from "./components/Auth/Register.vue";
-import TaskList from './components/Tasks/TaskList.vue'
-import TaskForm from './components/Tasks/TaskForm.vue'
+import TaskList from './components/Tasks/TaskList.vue';
+import TaskForm from './components/Tasks/TaskForm.vue';
+import TagManager from "./components/Tags/TagManager.vue";
+import TeamList from './components/Teams/TeamList.vue';
+import TeamFormModal from './components/Teams/TeamFormModal.vue';
+import AddMemberModal from './components/Teams/AddMemberModal.vue';
 import { setupAxios } from './utils/axios';
 
 setupAxios();
@@ -45,10 +49,22 @@ const routes = [
         meta: { requiresAuth: true }
     },
     {
+        path: '/tags',
+        name: 'tags',
+        component: TagManager,
+        meta: { requiresAuth: true }
+    },
+    {
         path: '/calendar',
         name: 'task-calendar',
         component: () => import('./components/Tasks/TaskCalendar.vue'),
         meta: { requiresAuth: true }
+    },
+    {
+        path: '/teams',
+        name: 'teams',
+        component: TeamList,
+        meta: { requiresAuth: true, requiresPremium: true }
     }
 ];
 
@@ -67,6 +83,8 @@ router.beforeEach(async (to, from, next) => {
 
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
         next({ name: 'login' });
+    } else if (to.meta.requiresPremium && !authStore.user?.is_premium) {
+        next({ name: 'tasks' });
     } else {
         next();
     }
