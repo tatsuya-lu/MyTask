@@ -14,14 +14,17 @@ export const useTaskStore = defineStore('task', {
             this.isLoading = true;
             try {
                 const response = await api.get('/tasks');
-                this.tasks = response.data.data;
+                this.tasks = response.data.data.map(task => ({
+                    ...task,
+                    tags: task.tags || []
+                }));
             } catch (error) {
                 this.error = error.response?.data?.message || 'タスクの取得に失敗しました';
                 throw error;
             } finally {
                 this.isLoading = false;
             }
-        },
+        }
 
         async createTask(taskData) {
             this.isLoading = true;

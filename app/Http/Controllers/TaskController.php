@@ -18,27 +18,18 @@ class TaskController extends Controller
 
     public function index(Request $request)
     {
-        $query = Task::with(['tags', 'team'])
-            ->where(function ($q) {
-                $q->where('user_id', auth()->id())
-                    ->orWhereIn('team_id', auth()->user()->teams->pluck('id'));
-            })
-            ->when($request->status, function ($q, $status) {
-                return $q->where('status', $status);
-            })
-            ->when($request->priority, function ($q, $priority) {
-                return $q->where('priority', $priority);
-            })
-            ->when($request->team_id, function ($q, $teamId) {
-                return $q->where('team_id', $teamId);
-            })
-            ->when($request->is_archived, function ($q) {
-                return $q->where('is_archived', true);
-            }, function ($q) {
-                return $q->where('is_archived', false);
-            });
+        $filters = $request->only([
+            'status',
+            'priority',
+            'team_id',
+            'is_archived',
+            'tag_ids'
+        ]);
 
-        return response()->json($query->paginate(10));
+        $query = $this->taskService->getFilteredTasks($filters);
+
+        $perPage = $request->input('per_page', 10);
+        return response()->json($query->paginate($perPage));
     }
 
     public function share(Request $request, Task $task)

@@ -69,6 +69,22 @@
                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
             </div>
 
+            <!-- タグ選択フィールド -->
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">
+                    タグ
+                </label>
+                <div class="flex flex-wrap gap-2">
+                    <label v-for="tag in tagStore.tags" :key="tag.id"
+                        class="inline-flex items-center cursor-pointer p-2 rounded border"
+                        :style="{ borderColor: tag.color }">
+                        <input type="checkbox" :value="tag.id" v-model="form.tags" class="mr-2">
+                        <span class="w-3 h-3 rounded-full mr-2" :style="{ backgroundColor: tag.color }"></span>
+                        {{ tag.name }}
+                    </label>
+                </div>
+            </div>
+
             <!-- ボタン -->
             <div class="flex items-center justify-between">
                 <button type="submit"
@@ -88,11 +104,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useTaskStore } from '../../stores/task';
+import { useTagStore } from '../../stores/tag';
 import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();
 const taskStore = useTaskStore();
+const tagStore = useTagStore();
 
 const isEditing = computed(() => !!route.params.id);
 const isLoading = ref(false);
@@ -104,14 +122,21 @@ const form = ref({
     priority: 'medium',
     status: 'not_started',
     progress: 0,
-    due_date: null
+    due_date: null,
+    tags: []
 });
 
 onMounted(async () => {
+    await tagStore.fetchTags();
+
     if (isEditing.value) {
         try {
             const response = await api.get(`/tasks/${route.params.id}`);
-            form.value = { ...response.data };
+            const task = response.data;
+            form.value = {
+                ...task,
+                tags: task.tags.map(tag => tag.id)
+            };
         } catch (error) {
             console.error('タスクの取得に失敗しました:', error);
             router.push({ name: 'tasks' });
