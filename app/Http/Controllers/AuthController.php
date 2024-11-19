@@ -19,33 +19,34 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
-
+        Auth::login($user);
+        $request->session()->regenerate();
+        
         return response()->json([
-            'user' => $user,
-            'token' => $token
+            'user' => $user
         ], 201);
     }
 
     public function login(LoginRequest $request)
     {
-        if (Auth::attempt($request->only('email', 'password'))) {
-            $request->session()->regenerate();
-
+        if (!Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
-                'user' => Auth::user()
-            ]);
+                'message' => '認証に失敗しました'
+            ], 401);
         }
 
+        $request->session()->regenerate();
+        
         return response()->json([
-            'message' => '認証に失敗しました'
-        ], 401);
+            'user' => Auth::user()
+        ]);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
         Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json(['message' => 'ログアウトに成功しました']);
     }

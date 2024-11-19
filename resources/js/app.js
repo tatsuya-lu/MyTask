@@ -1,3 +1,4 @@
+import './bootstrap';
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import { useAuthStore } from "./stores/auth";
@@ -11,9 +12,9 @@ import TagManager from "./components/Tags/TagManager.vue";
 import TeamList from './components/Teams/TeamList.vue';
 import TeamFormModal from './components/Teams/TeamFormModal.vue';
 import AddMemberModal from './components/Teams/AddMemberModal.vue';
-import { setupAxios } from './utils/axios';
+// import { setupAxios } from './utils/axios';
 
-setupAxios();
+// setupAxios();
 
 const routes = [
     {
