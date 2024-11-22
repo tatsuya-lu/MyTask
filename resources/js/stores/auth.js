@@ -1,78 +1,62 @@
-import { defineStore } from "pinia";
-import { api } from '../utils/axios';
+import { defineStore } from 'pinia'
+import axios from 'axios'
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null
+        token: localStorage.getItem('token') || null
     }),
     
     actions: {
-        async login(credentials) {
-            this.isLoading = true;
-            this.error = null;
+        async register(userData) {
             try {
-                await api.get('/sanctum/csrf-cookie');
-                
-                const response = await api.post('/login', credentials);
-                this.user = response.data.user;
-                this.isAuthenticated = true;
-                return true;
+                const response = await axios.post('/api/auth/register', userData)
+                return response.data
             } catch (error) {
-                this.error = error.response?.data?.message || 'ログインに失敗しました';
-                throw new Error(this.error);
-            } finally {
-                this.isLoading = false;
+                throw error.response.data
             }
         },
 
-        async register(userData) {
-            this.isLoading = true;
-            this.error = null;
+        async login(credentials) {
             try {
-                await api.get('/sanctum/csrf-cookie');
-                
-                const response = await api.post('/register', userData);
-                this.user = response.data.user;
-                this.isAuthenticated = true;
-                return true;
+                const response = await axios.post('/api/auth/login', credentials)
+                this.user = response.data.user
+                this.token = response.data.token
+                localStorage.setItem('token', this.token)
+                axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+                return response.data
             } catch (error) {
-                this.error = error.response?.data?.message || '登録に失敗しました';
-                throw new Error(this.error);
-            } finally {
-                this.isLoading = false;
+                throw error.response.data
             }
         },
 
         async logout() {
             try {
-                await api.post('/logout');
+                await axios.post('/api/auth/logout')
+                this.user = null
+                this.token = null
+                localStorage.removeItem('token')
+                delete axios.defaults.headers.common['Authorization']
             } catch (error) {
-                console.error('Logout failed:', error);
-            } finally {
-                this.user = null;
-                this.isAuthenticated = false;
+                throw error.response.data
             }
         },
 
-        async checkAuth() {
+        async fetchUser() {
+            if (!this.token) return
+
             try {
-                const response = await api.get('/user');
-                this.user = response.data;
-                this.isAuthenticated = true;
-                return true;
+                const response = await axios.get('/api/auth/profile')
+                this.user = response.data.user
             } catch (error) {
-                this.user = null;
-                this.isAuthenticated = false;
-                return false;
+                this.logout()
             }
         }
     },
 
     getters: {
-        currentUser: (state) => state.user,
-        authError: (state) => state.error
+        isAuthenticated() {
+            return !!this.token
+        }
     }
-});
+})
