@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { api } from '../utils/axios'
 
 export const useTaskStore = defineStore('task', {
     state: () => ({

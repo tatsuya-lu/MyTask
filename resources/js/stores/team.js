@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { api } from '../utils/axios'
 
 export const useTeamStore = defineStore('team', {
     state: () => ({

@@ -75,7 +75,6 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { api } from '../../utils/axios';
 
 const props = defineProps({
     team: {
