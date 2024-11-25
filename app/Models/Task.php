@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\TaskStatus;
+use App\Enums\TaskPriority;
 
 class Task extends Model
 {
@@ -21,7 +23,9 @@ class Task extends Model
     ];
 
     protected $casts = [
-        'due_date' => 'date'
+        'due_date' => 'date',
+        'status' => TaskStatus::class,
+        'priority' => TaskPriority::class
     ];
 
     public function user()
@@ -31,6 +35,7 @@ class Task extends Model
 
     public function tags()
     {
-        return $this->belongsTo(Tag::class);
+        return $this->belongsToMany(Tag::class)
+            ->withTimestamps();
     }
 }
