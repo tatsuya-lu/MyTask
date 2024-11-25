@@ -19,8 +19,8 @@ return new class extends Migration
                 ->name('fk_tasks_user');
             $table->string('title');
             $table->text('description')->nullable();
-            $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
-            $table->enum('status', ['not_started', 'in_progress', 'completed'])->default('not_started');
+            $table->string('priority')->default('medium');
+            $table->string('status')->default('not_started');
             $table->integer('progress')->default(0);
             $table->date('due_date')->nullable();
             $table->foreignId('team_id')
@@ -30,7 +30,6 @@ return new class extends Migration
                 ->name('fk_tasks_team');
             $table->boolean('is_archived')->default(false);
             $table->boolean('is_premium_feature')->default(false);
-            $table->json('shared_with')->nullable();
             $table->integer('sort_order')->default(0);
             $table->boolean('notify_before_due')->default(true);
             $table->integer('notify_days_before')->default(1);
