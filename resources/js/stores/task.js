@@ -5,14 +5,49 @@ export const useTaskStore = defineStore('task', {
         tasks: [],
         currentTask: null,
         isLoading: false,
-        error: null
+        error: null,
+        filters: {
+            status: '',
+            priority: '',
+            tagId: '',
+            searchQuery: ''
+        }
     }),
 
+    getters: {
+        filteredTasks: (state) => {
+            return state.tasks.filter(task => {
+                const matchesStatus = !state.filters.status || task.status === state.filters.status;
+                const matchesPriority = !state.filters.priority || task.priority === state.filters.priority;
+                const matchesTag = !state.filters.tagId || task.tags.some(tag => tag.id === parseInt(state.filters.tagId));
+                const matchesSearch = !state.filters.searchQuery ||
+                    task.title.toLowerCase().includes(state.filters.searchQuery.toLowerCase()) ||
+                    task.description.toLowerCase().includes(state.filters.searchQuery.toLowerCase());
+
+                return matchesStatus && matchesPriority && matchesTag && matchesSearch;
+            });
+        }
+    },
+
     actions: {
-        async fetchTasks() {
+        setFilter(filterType, value) {
+            this.filters[filterType] = value;
+        },
+
+        clearFilters() {
+            this.filters = {
+                status: '',
+                priority: '',
+                tagId: '',
+                searchQuery: ''
+            };
+        },
+
+        async fetchTasks(filters = {}) {
             this.isLoading = true;
             try {
-                const response = await api.get('/tasks');
+                const queryParams = new URLSearchParams(filters).toString();
+                const response = await api.get(`/tasks?${queryParams}`);
                 this.tasks = response.data.data.map(task => ({
                     ...task,
                     tags: task.tags || []
