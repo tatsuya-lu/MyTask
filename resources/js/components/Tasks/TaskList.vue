@@ -112,12 +112,14 @@
                             削除
                         </button>
                     </div>
-            <TransitionGroup name="list">
-                <div v-for="task in filteredTasks" :key="task.id"
-                    class="bg-white p-4 rounded shadow hover:shadow-md transition-shadow duration-200">
-                    <!-- 既存のタスクカード内容 -->
                 </div>
-            </TransitionGroup>
+                <TransitionGroup name="list">
+                    <div v-for="task in filteredTasks" :key="task.id"
+                        class="bg-white p-4 rounded shadow hover:shadow-md transition-shadow duration-200">
+                        <!-- 既存のタスクカード内容 -->
+                    </div>
+                </TransitionGroup>
+            </div>
         </div>
     </div>
 </template>
