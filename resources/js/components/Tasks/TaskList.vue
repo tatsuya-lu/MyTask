@@ -74,6 +74,44 @@
         </div>
 
         <div v-else class="grid gap-4">
+            <div v-for="task in tasks" :key="task.id" class="bg-white p-4 rounded shadow">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-semibold">{{ task.title }}</h3>
+                        <p class="text-gray-600 text-sm mt-1">{{ task.description }}</p>
+                        <!-- タグの表示 -->
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            <span v-for="tag in task.tags" :key="tag.id" class="px-2 py-1 rounded text-sm" :style="{
+                                backgroundColor: tag.color + '20',
+                                color: tag.color,
+                                borderColor: tag.color,
+                                borderWidth: '1px'
+                            }">
+                                {{ tag.name }}
+                            </span>
+                        </div>
+                        <div class="mt-2 flex gap-2">
+                            <span class="px-2 py-1 text-xs rounded" :class="{
+                                'bg-red-100 text-red-800': task.priority === 'high',
+                                'bg-yellow-100 text-yellow-800': task.priority === 'medium',
+                                'bg-green-100 text-green-800': task.priority === 'low'
+                            }">
+                                {{ task.priority }}
+                            </span>
+                            <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">
+                                {{ task.status }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <router-link :to="{ name: 'task-edit', params: { id: task.id } }"
+                            class="text-blue-500 hover:text-blue-700">
+                            編集
+                        </router-link>
+                        <button @click="deleteTask(task.id)" class="text-red-500 hover:text-red-700">
+                            削除
+                        </button>
+                    </div>
             <TransitionGroup name="list">
                 <div v-for="task in filteredTasks" :key="task.id"
                     class="bg-white p-4 rounded shadow hover:shadow-md transition-shadow duration-200">
@@ -122,7 +160,15 @@ onMounted(async () => {
     ]);
 });
 
-// 既存の削除機能などは省略
+const deleteTask = async (taskId) => {
+    if (confirm('このタスクを削除してもよろしいですか？')) {
+        try {
+            await taskStore.deleteTask(taskId);
+        } catch (error) {
+            console.error('タスクの削除に失敗しました:', error);
+        }
+    }
+};
 </script>
 
 <style>
