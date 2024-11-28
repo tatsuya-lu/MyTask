@@ -11,7 +11,7 @@ export const useTagStore = defineStore('tag', {
         async fetchTags() {
             this.isLoading = true;
             try {
-                const response = await api.get('/tags');
+                const response = await axios.get('/tags');
                 this.tags = response.data;
             } catch (error) {
                 this.error = error.response?.data?.message || 'タグの取得に失敗しました';

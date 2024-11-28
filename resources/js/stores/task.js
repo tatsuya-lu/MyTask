@@ -47,7 +47,7 @@ export const useTaskStore = defineStore('task', {
             this.isLoading = true;
             try {
                 const queryParams = new URLSearchParams(filters).toString();
-                const response = await api.get(`/tasks?${queryParams}`);
+                const response = await axios.get(`/api/tasks?${queryParams}`);
                 this.tasks = response.data.data.map(task => ({
                     ...task,
                     tags: task.tags || []
