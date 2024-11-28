@@ -79,17 +79,33 @@ const router = createRouter({
     routes
 })
 
-// ナビゲーションガード
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     const authStore = useAuthStore()
 
-    if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-        next('/login')
-    } else if (to.meta.requiresGuest && authStore.isAuthenticated) {
-        next('/dashboard')
-    } else {
-        next()
+    if (to.meta.requiresAuth) {
+        if (authStore.token) {
+            try {
+                if (!authStore.user) {
+                    const fetchResult = await authStore.fetchUser()
+                    
+                    if (!fetchResult) {
+                        next('/login')
+                        return
+                    }
+                }
+            } catch (error) {
+                next('/login')
+                return
+            }
+        }
+
+        if (!authStore.isAuthenticated) {
+            next('/login')
+            return
+        }
     }
+
+    next()
 })
 
 export default router

@@ -33,23 +33,37 @@ export const useAuthStore = defineStore('auth', {
         async logout() {
             try {
                 await axios.post('/api/auth/logout')
+            } catch (error) {
+                console.warn('Logout error:', error)
+            } finally {
                 this.user = null
                 this.token = null
                 localStorage.removeItem('token')
                 delete axios.defaults.headers.common['Authorization']
-            } catch (error) {
-                throw error.response.data
+                
+                window.location.href = '/login'
             }
         },
 
         async fetchUser() {
             if (!this.token) return
-
+        
             try {
+                await axios.get('/sanctum/csrf-cookie')
+                axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
                 const response = await axios.get('/api/auth/profile')
                 this.user = response.data.user
+                return true
             } catch (error) {
-                this.logout()
+                console.error('ユーザー情報取得エラー:', error)
+                
+                this.token = null
+                localStorage.removeItem('token')
+                delete axios.defaults.headers.common['Authorization']
+                this.user = null
+                
+                window.location.href = '/login'
+                return false
             }
         }
     },
