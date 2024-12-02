@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { defineStore } from 'pinia'
 
 export const useTaskStore = defineStore('task', {
@@ -64,6 +63,8 @@ export const useTaskStore = defineStore('task', {
         async createTask(taskData) {
             this.isLoading = true;
             try {
+                // CSRFトークンを明示的に取得
+                await axios.get('/sanctum/csrf-cookie');
                 const response = await axios.post('/api/tasks', taskData);
                 this.tasks.push(response.data);
                 return response.data;
