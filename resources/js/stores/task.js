@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { defineStore } from 'pinia'
 
 export const useTaskStore = defineStore('task', {
@@ -63,7 +64,7 @@ export const useTaskStore = defineStore('task', {
         async createTask(taskData) {
             this.isLoading = true;
             try {
-                const response = await api.post('/tasks', taskData);
+                const response = await axios.post('/api/tasks', taskData);
                 this.tasks.push(response.data);
                 return response.data;
             } catch (error) {
@@ -77,7 +78,7 @@ export const useTaskStore = defineStore('task', {
         async updateTask(taskId, taskData) {
             this.isLoading = true;
             try {
-                const response = await api.put(`/tasks/${taskId}`, taskData);
+                const response = await axios.put(`/api/tasks/${taskId}`, taskData);
                 const index = this.tasks.findIndex(task => task.id === taskId);
                 if (index !== -1) {
                     this.tasks[index] = response.data;
@@ -94,7 +95,7 @@ export const useTaskStore = defineStore('task', {
         async deleteTask(taskId) {
             this.isLoading = true;
             try {
-                await api.delete(`/tasks/${taskId}`);
+                await axios.delete(`/api/tasks/${taskId}`);
                 this.tasks = this.tasks.filter(task => task.id !== taskId);
             } catch (error) {
                 this.error = error.response?.data?.message || 'タスクの削除に失敗しました';

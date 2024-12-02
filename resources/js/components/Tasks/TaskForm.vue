@@ -71,32 +71,62 @@
 
             <!-- タグ選択フィールド -->
             <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2">
-                    タグ
-                </label>
-                <div class="flex flex-wrap gap-2">
-                    <label v-for="tag in tagStore.tags" :key="tag.id"
-                        class="inline-flex items-center cursor-pointer p-2 rounded border"
-                        :style="{ borderColor: tag.color }">
-                        <input type="checkbox" :value="tag.id" v-model="form.tags" class="mr-2">
-                        <span class="w-3 h-3 rounded-full mr-2" :style="{ backgroundColor: tag.color }"></span>
+                <label class="block text-gray-700 text-sm font-bold mb-2">タグ</label>
+                <div class="flex items-center space-x-2 mb-2">
+                    <input v-model="newTag.name" type="text" placeholder="タグ名"
+                        class="flex-grow px-2 py-1 border rounded">
+                    <input v-model="newTag.color" type="color" class="w-12 h-10 border rounded">
+                    <button @click="addTag" class="bg-blue-500 text-white px-3 py-1 rounded" :disabled="!newTag.name">
+                        追加
+                    </button>
+                </div>
+
+                <!-- 追加されたタグのリスト -->
+                <div class="flex flex-wrap gap-2 mb-2">
+                    <span v-for="(tag, index) in dynamicTags" :key="index"
+                        class="flex items-center px-2 py-1 rounded text-sm" :style="{
+                            backgroundColor: tag.color + '20',
+                            color: tag.color,
+                            borderColor: tag.color,
+                            borderWidth: '1px'
+                        }">
                         {{ tag.name }}
-                    </label>
+                        <button @click="removeTag(index)" class="ml-2 text-red-500 text-xs">
+                            ×
+                        </button>
+                    </span>
+                </div>
+
+                <!-- 既存のタグ選択 -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">タグ</label>
+                    <div class="flex flex-wrap gap-2">
+                        <p v-if="tagStore.tags.length === 0" class="text-gray-500">
+                            タグが見つかりません
+                        </p>
+                        <label v-else v-for="tag in tagStore.tags" :key="tag.id"
+                            class="inline-flex items-center cursor-pointer p-2 rounded border"
+                            :style="{ borderColor: tag.color }">
+                            <input type="checkbox" :value="tag.id" v-model="form.tags" class="mr-2">
+                            <span class="w-3 h-3 rounded-full mr-2" :style="{ backgroundColor: tag.color }"></span>
+                            {{ tag.name }}
+                        </label>
+                    </div>
                 </div>
             </div>
 
-            <!-- ボタン -->
-            <div class="flex items-center justify-between">
-                <button type="submit"
-                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                    :disabled="isLoading">
-                    {{ isLoading ? '保存中...' : (isEditing ? '更新' : '作成') }}
-                </button>
-                <button type="button" @click="router.push({ name: 'tasks' })"
-                    class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                    キャンセル
-                </button>
-            </div>
+                <!-- ボタン -->
+                <div class="flex items-center justify-between">
+                    <button type="submit"
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                        :disabled="isLoading">
+                        {{ isLoading ? '保存中...' : (isEditing ? '更新' : '作成') }}
+                    </button>
+                    <button type="button" @click="router.push({ name: 'tasks' })"
+                        class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        キャンセル
+                    </button>
+                </div>
         </form>
     </div>
 </template>
@@ -106,6 +136,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useTaskStore } from '../../stores/task';
 import { useTagStore } from '../../stores/tag';
 import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
 
 const route = useRoute();
 const router = useRouter();
@@ -126,12 +157,38 @@ const form = ref({
     tags: []
 });
 
+const dynamicTags = ref([]);
+const newTag = ref({
+    name: '',
+    color: '#000000'
+});
+
+const addTag = () => {
+    if (newTag.value.name.trim()) {
+        dynamicTags.value.push({
+            name: newTag.value.name,
+            color: newTag.value.color
+        });
+        newTag.value.name = '';
+        newTag.value.color = '#000000';
+    }
+};
+
+const removeTag = (index) => {
+    dynamicTags.value.splice(index, 1);
+};
+
+
 onMounted(async () => {
-    await tagStore.fetchTags();
+    try {
+        await tagStore.fetchTags();
+    } catch (error) {
+        console.error('タグの取得に失敗しました:', error);
+    }
 
     if (isEditing.value) {
         try {
-            const response = await api.get(`/tasks/${route.params.id}`);
+            const response = await axios.get(`/api/tasks/${route.params.id}`);
             const task = response.data;
             form.value = {
                 ...task,
@@ -145,17 +202,44 @@ onMounted(async () => {
 });
 
 const handleSubmit = async () => {
+    console.log('handleSubmit関数が呼び出されました');
+    console.log('フォームデータ:', form.value);
+    console.log('動的タグ:', dynamicTags.value);
+
     isLoading.value = true;
     errors.value = {};
 
     try {
+        await axios.get('/sanctum/csrf-cookie');
+        // 動的タグの作成
+        const newTagPromises = dynamicTags.value.map(tag => {
+            console.log('タグ作成:', tag);
+            return tagStore.createTag({
+                name: tag.name,
+                color: tag.color
+            });
+        });
+
+        const createdTags = await Promise.all(newTagPromises);
+        console.log('作成されたタグ:', createdTags);
+
+        // 新しく作成されたタグのIDを追加
+        const newTagIds = createdTags.map(tag => tag.id);
+        form.value.tags = [...form.value.tags, ...newTagIds];
+
+        console.log('最終的なタグID:', form.value.tags);
+
+        // タスクの作成または更新
         if (isEditing.value) {
             await taskStore.updateTask(route.params.id, form.value);
         } else {
             await taskStore.createTask(form.value);
         }
+        
         router.push({ name: 'tasks' });
     } catch (error) {
+        console.error('エラーの詳細:', error);
+        
         if (error.response?.status === 422) {
             errors.value = error.response.data.errors;
         }

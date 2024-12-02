@@ -45,7 +45,13 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     
     // タグ関連
-    Route::apiResource('tags', TagController::class);
+    // Route::apiResource('tags', TagController::class);
+    Route::prefix('tags')->group(function () {
+        Route::get('/', [TagController::class, 'index'])->name('tags.index');
+        Route::post('/', [TagController::class, 'store'])->name('tags.store');
+        Route::put('/{tag}', [TagController::class, 'update'])->name('tags.update');
+        Route::delete('/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
+    });
     
     // カレンダー関連
     Route::get('/calendar/tasks', [TaskController::class, 'calendarTasks'])

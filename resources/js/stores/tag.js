@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { defineStore } from 'pinia'
 
 export const useTagStore = defineStore('tag', {
@@ -11,9 +12,11 @@ export const useTagStore = defineStore('tag', {
         async fetchTags() {
             this.isLoading = true;
             try {
-                const response = await axios.get('/tags');
+                const response = await axios.get('/api/tags');
+                console.log('タグレスポンス:', response.data);  // レスポンスの中身を確認
                 this.tags = response.data;
             } catch (error) {
+                console.error('タグ取得エラー:', error);
                 this.error = error.response?.data?.message || 'タグの取得に失敗しました';
                 throw error;
             } finally {
@@ -24,7 +27,8 @@ export const useTagStore = defineStore('tag', {
         async createTag(tagData) {
             this.isLoading = true;
             try {
-                const response = await api.post('/tags', tagData);
+                await axios.get('/sanctum/csrf-cookie');
+                const response = await axios.post('/api/tags', tagData);
                 this.tags.push(response.data);
                 return response.data;
             } catch (error) {
