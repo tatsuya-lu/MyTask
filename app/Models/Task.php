@@ -41,6 +41,6 @@ class Task extends Model
 
     public function team()
     {
-        return $this->hasMany(Team::class);
+        return $this->belongsTo(Team::class);
     }
 }

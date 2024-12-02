@@ -48,6 +48,7 @@ export const useTaskStore = defineStore('task', {
             try {
                 const queryParams = new URLSearchParams(filters).toString();
                 const response = await axios.get(`/api/tasks?${queryParams}`);
+                console.log('タスクレスポンス:', response.data);  // レスポンスの中身を確認
                 this.tasks = response.data.data.map(task => ({
                     ...task,
                     tags: task.tags || []

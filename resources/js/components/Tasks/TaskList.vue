@@ -74,7 +74,7 @@
         </div>
 
         <div v-else class="grid gap-4">
-            <div v-for="task in tasks" :key="task.id" class="bg-white p-4 rounded shadow">
+            <div v-for="task in filteredTasks" :key="task.id" class="bg-white p-4 rounded shadow">
                 <div class="flex justify-between items-start">
                     <div>
                         <h3 class="font-semibold">{{ task.title }}</h3>
@@ -113,12 +113,6 @@
                         </button>
                     </div>
                 </div>
-                <TransitionGroup name="list">
-                    <div v-for="task in filteredTasks" :key="task.id"
-                        class="bg-white p-4 rounded shadow hover:shadow-md transition-shadow duration-200">
-                        <!-- 既存のタスクカード内容 -->
-                    </div>
-                </TransitionGroup>
             </div>
         </div>
     </div>
@@ -136,6 +130,7 @@ const taskStore = useTaskStore();
 const tagStore = useTagStore();
 
 const { isLoading, error } = storeToRefs(taskStore);
+const tasks = computed(() => taskStore.tasks);
 const filteredTasks = computed(() => taskStore.filteredTasks);
 
 // フィルター状態
