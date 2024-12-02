@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // グローバルミドルウェアにCORSを追加
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
+        $middleware->append(\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
