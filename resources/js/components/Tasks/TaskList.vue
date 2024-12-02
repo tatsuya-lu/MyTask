@@ -26,7 +26,7 @@
                     <select v-model="selectedStatus" class="w-full border rounded-md py-2 px-3 text-gray-700"
                         @change="handleFilterChange">
                         <option value="">すべて</option>
-                        <option value="new">新規</option>
+                        <option value="not_started">新規</option>
                         <option value="in_progress">進行中</option>
                         <option value="completed">完了</option>
                     </select>
