@@ -43,14 +43,17 @@ class TaskPolicy
      */
     public function update(User $user, Task $task): bool
     {
+        // アーカイブされたタスクは編集不可
         if ($task->is_archived) {
             return false;
         }
 
+        // 個人タスクの場合
         if (!$task->team_id) {
             return $user->id === $task->user_id;
         }
 
+        // チームタスクの場合
         return $user->id === $task->user_id ||
             $user->isTeamLeader($task->team);
     }

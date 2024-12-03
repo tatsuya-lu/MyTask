@@ -70,7 +70,15 @@ class TaskController extends Controller
 
     public function update(TaskRequest $request, Task $task)
     {
+        // 明示的な認可チェック
         $this->authorize('update', $task);
+
+        // 追加のカスタムチェック
+        if ($task->is_archived) {
+            return response()->json(['message' => 'アーカイブされたタスクは編集できません'], 403);
+        }
+
+        // 既存の更新処理
         $task = $this->taskService->updateTask($task, $request->validated());
         return response()->json($task);
     }
