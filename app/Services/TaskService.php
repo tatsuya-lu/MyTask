@@ -10,10 +10,10 @@ class TaskService
     public function createTask(array $data)
     {
         $data['user_id'] = Auth::id();
-        
+
         $tags = $data['tags'] ?? [];
         unset($data['tags']);
-        
+
         $task = Task::create($data);
 
         if (!empty($tags)) {
@@ -25,9 +25,13 @@ class TaskService
 
     public function updateTask(Task $task, array $data)
     {
+        if (isset($data['due_date'])) {
+            $data['due_date'] = \Carbon\Carbon::parse($data['due_date'])->format('Y-m-d');
+        }
+
         $tags = $data['tags'] ?? [];
         unset($data['tags']);
-        
+
         $task->update($data);
 
         if (isset($tags)) {

@@ -27,7 +27,7 @@ class TaskRequest extends FormRequest
             'priority' => 'required|in:low,medium,high',
             'status' => 'required|in:not_started,in_progress,completed',
             'progress' => 'required|integer|min:0|max:100',
-            'due_date' => 'nullable|date',
+            'due_date' => 'nullable|date_format:Y-m-d',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id'
         ];

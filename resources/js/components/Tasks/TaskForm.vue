@@ -65,8 +65,9 @@
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="due_date">
                     期限日
                 </label>
-                <input id="due_date" v-model="form.due_date" type="date"
-                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <Datepicker v-model="form.due_date" format="'yyyy-MM-dd'" locale="ja" :enable-time-picker="false"
+                    :month-picker="false" :year-picker="false" placeholder="期限日を選択" position="left" :dark="false"
+                    class="w-full" />
             </div>
 
             <!-- タグ選択フィールド -->
@@ -115,18 +116,18 @@
                 </div>
             </div>
 
-                <!-- ボタン -->
-                <div class="flex items-center justify-between">
-                    <button type="submit"
-                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                        :disabled="isLoading">
-                        {{ isLoading ? '保存中...' : (isEditing ? '更新' : '作成') }}
-                    </button>
-                    <button type="button" @click="router.push({ name: 'tasks' })"
-                        class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                        キャンセル
-                    </button>
-                </div>
+            <!-- ボタン -->
+            <div class="flex items-center justify-between">
+                <button type="submit"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    :disabled="isLoading">
+                    {{ isLoading ? '保存中...' : (isEditing ? '更新' : '作成') }}
+                </button>
+                <button type="button" @click="router.push({ name: 'tasks' })"
+                    class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    キャンセル
+                </button>
+            </div>
         </form>
     </div>
 </template>
@@ -137,6 +138,8 @@ import { useTaskStore } from '../../stores/task';
 import { useTagStore } from '../../stores/tag';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
 
 const route = useRoute();
 const router = useRouter();
@@ -192,6 +195,9 @@ onMounted(async () => {
             const task = response.data;
             form.value = {
                 ...task,
+                due_date: task.due_date
+                    ? new Date(task.due_date)
+                    : null,
                 tags: task.tags.map(tag => tag.id)
             };
         } catch (error) {
@@ -235,11 +241,11 @@ const handleSubmit = async () => {
         } else {
             await taskStore.createTask(form.value);
         }
-        
+
         router.push({ name: 'tasks' });
     } catch (error) {
         console.error('エラーの詳細:', error);
-        
+
         if (error.response?.status === 422) {
             errors.value = error.response.data.errors;
         }
