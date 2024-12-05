@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\TaskRequest;
 use App\Models\Task;
 use App\Services\TaskService;
+use App\Http\Resources\TaskResource;
 
 class TaskController extends Controller
 {
@@ -29,7 +30,7 @@ class TaskController extends Controller
         $query = $this->taskService->getFilteredTasks($filters);
 
         $perPage = $request->input('per_page', 10);
-        return response()->json($query->paginate($perPage));
+        return TaskResource::collection($query->paginate($perPage));
     }
 
     public function share(Request $request, Task $task)
@@ -59,13 +60,13 @@ class TaskController extends Controller
     public function store(TaskRequest $request)
     {
         $task = $this->taskService->createTask($request->validated());
-        return response()->json($task, 201);
+        return new TaskResource($task);
     }
 
     public function show(Task $task)
     {
         $this->authorize('view', $task);
-        return response()->json($task->load('tags'));
+        return new TaskResource($task->load('tags'));
     }
 
     public function update(TaskRequest $request, Task $task)
@@ -80,7 +81,7 @@ class TaskController extends Controller
 
         // 既存の更新処理
         $task = $this->taskService->updateTask($task, $request->validated());
-        return response()->json($task);
+        return new TaskResource($task);
     }
 
     public function destroy(Task $task)

@@ -192,13 +192,16 @@ onMounted(async () => {
     if (isEditing.value) {
         try {
             const response = await axios.get(`/api/tasks/${route.params.id}`);
-            const task = response.data;
+            const task = response.data.data;
+
             form.value = {
                 ...task,
                 due_date: task.due_date
                     ? new Date(task.due_date)
                     : null,
-                tags: task.tags.map(tag => tag.id)
+                tags: task.tags
+                    ? task.tags.map(tag => tag.id)
+                    : [] // tagsがnullの場合は空配列にする
             };
         } catch (error) {
             console.error('タスクの取得に失敗しました:', error);
