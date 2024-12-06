@@ -65,7 +65,8 @@
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="due_date">
                     期限日
                 </label>
-                <Datepicker v-model="form.due_date" format="'yyyy-MM-dd'" locale="ja" :enable-time-picker="false"
+                <Datepicker v-model="form.due_date" format="yyyy年MM月dd日" locale="ja" cancel-text="キャンセル"
+                select-text="選択" :enable-time-picker="false"
                     :month-picker="false" :year-picker="false" placeholder="期限日を選択" position="left" :dark="false"
                     class="w-full" />
             </div>
