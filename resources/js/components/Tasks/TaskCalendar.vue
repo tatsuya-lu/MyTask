@@ -52,7 +52,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useTaskStore } from '../../stores/task'
+import { useTaskStore } from '@/stores/task'
 
 const taskStore = useTaskStore()
 const currentDate = ref(new Date())
@@ -123,7 +123,14 @@ const nextMonth = () => {
 
 // タスクの読み込み
 const loadTasks = async () => {
-    tasks.value = await taskStore.fetchTasks()
+    // filterを追加
+    const filters = {
+        month: currentDate.value.getMonth() + 1,
+        year: currentDate.value.getFullYear()
+    };
+    await taskStore.fetchTasks(filters);
+    // ストアから直接タスクを取得
+    tasks.value = taskStore.tasks;
 }
 
 onMounted(() => {
