@@ -49,6 +49,11 @@ class TaskService
                     ->orWhereIn('team_id', auth()->user()->teams->pluck('id'));
             });
 
+        // 年でフィルタリング
+        if (!empty($filters['year'])) {
+            $query->whereYear('due_date', $filters['year']);
+        }
+
         if (!empty($filters['tag_ids'])) {
             $query->whereHas('tags', function ($q) use ($filters) {
                 $q->whereIn('tags.id', $filters['tag_ids']);

@@ -47,6 +47,57 @@
                 </div>
             </div>
         </div>
+
+        <!-- 年選択セクション -->
+        <div class="flex justify-between items-center mb-6">
+            <button @click="previousYear" class="p-2">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <h2 class="text-xl font-semibold">
+                {{ currentYear }}年
+            </h2>
+            <button @click="nextYear" class="p-2">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- 年間カレンダーグリッド -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div v-for="(month, index) in 12" :key="month" class="bg-white p-4 rounded shadow">
+                <h3 class="text-lg font-semibold mb-4 text-center">
+                    {{ month }}月
+                </h3>
+
+                <!-- 月のカレンダーヘッダー -->
+                <div class="grid grid-cols-7 gap-1 mb-2">
+                    <div v-for="day in ['日', '月', '火', '水', '木', '金', '土']" :key="day"
+                        class="text-center text-xs font-medium" :class="{
+                            'text-red-500': day === '日',
+                            'text-blue-500': day === '土'
+                        }">
+                        {{ day }}
+                    </div>
+                </div>
+
+                <!-- 月のカレンダー日付 -->
+                <div class="grid grid-cols-7 gap-1">
+                    <div v-for="date in getMonthDates(index)" :key="date.toISOString()"
+                        class="text-center text-xs p-1 min-h-[30px] border" :class="{
+                            'bg-gray-100': date.getMonth() !== index,
+                            'bg-blue-50': isToday(date),
+                            'font-bold': date.getDate() === 1
+                        }">
+                        <span :class="{ 'text-gray-400': date.getMonth() !== index }">
+                            {{ date.getDate() }}
+                        </span>
+
+                        <!-- その日のタスクインジケーター -->
+                        <div v-if="getTasksForDate(date).length" class="h-1 w-1 bg-blue-500 rounded-full mx-auto mt-1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -56,7 +107,36 @@ import { useTaskStore } from '@/stores/task'
 
 const taskStore = useTaskStore()
 const currentDate = ref(new Date())
+const currentYear = ref(new Date().getFullYear())
 const tasks = ref([])
+
+// 特定の月の日付を取得
+const getMonthDates = (monthIndex) => {
+    const dates = []
+    const year = currentYear.value
+
+    // 月の最初の日の曜日を取得
+    const firstDay = new Date(year, monthIndex, 1).getDay()
+
+    // 前月の日を追加
+    for (let i = firstDay - 1; i >= 0; i--) {
+        dates.push(new Date(year, monthIndex, -i))
+    }
+
+    // 当月の日を追加
+    const lastDate = new Date(year, monthIndex + 1, 0).getDate()
+    for (let i = 1; i <= lastDate; i++) {
+        dates.push(new Date(year, monthIndex, i))
+    }
+
+    // 次月の日を追加（6週間分になるまで）
+    const remainingDays = 42 - dates.length
+    for (let i = 1; i <= remainingDays; i++) {
+        dates.push(new Date(year, monthIndex + 1, i))
+    }
+
+    return dates
+}
 
 // カレンダーの日付を生成
 const calendarDates = computed(() => {
@@ -86,6 +166,17 @@ const calendarDates = computed(() => {
 
     return dates
 })
+
+// 年の移動
+const previousYear = () => {
+    currentYear.value -= 1
+    loadTasks()
+}
+
+const nextYear = () => {
+    currentYear.value += 1
+    loadTasks()
+}
 
 // 日付に関するユーティリティ関数
 const isCurrentMonth = (date) => {
@@ -123,14 +214,11 @@ const nextMonth = () => {
 
 // タスクの読み込み
 const loadTasks = async () => {
-    // filterを追加
     const filters = {
-        month: currentDate.value.getMonth() + 1,
-        year: currentDate.value.getFullYear()
-    };
-    await taskStore.fetchTasks(filters);
-    // ストアから直接タスクを取得
-    tasks.value = taskStore.tasks;
+        year: currentYear.value
+    }
+    await taskStore.fetchTasks(filters)
+    tasks.value = taskStore.tasks
 }
 
 onMounted(() => {
