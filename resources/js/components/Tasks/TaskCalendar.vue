@@ -53,46 +53,55 @@
             <button @click="previousYear" class="p-2">
                 <i class="fas fa-chevron-left"></i>
             </button>
-            <h2 class="text-xl font-semibold">
-                {{ currentYear }}年
-            </h2>
+            <div class="flex space-x-4">
+                <h2 class="text-xl font-semibold">
+                    {{ currentYear }}年
+                </h2>
+                <h2 class="text-xl font-semibold">
+                    {{ currentYear + 1 }}年
+                </h2>
+            </div>
             <button @click="nextYear" class="p-2">
                 <i class="fas fa-chevron-right"></i>
             </button>
         </div>
 
-        <!-- 年間カレンダーグリッド -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div v-for="(month, index) in 12" :key="month" class="bg-white p-4 rounded shadow">
-                <h3 class="text-lg font-semibold mb-4 text-center">
-                    {{ month }}月
-                </h3>
+        <!-- 2年間のカレンダーグリッド -->
+        <div v-for="year in [currentYear, currentYear + 1]" :key="year" class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">{{ year }}年</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div v-for="(month, index) in 12" :key="month" class="bg-white p-4 rounded shadow">
+                    <h3 class="text-lg font-semibold mb-4 text-center">
+                        {{ month }}月
+                    </h3>
 
-                <!-- 月のカレンダーヘッダー -->
-                <div class="grid grid-cols-7 gap-1 mb-2">
-                    <div v-for="day in ['日', '月', '火', '水', '木', '金', '土']" :key="day"
-                        class="text-center text-xs font-medium" :class="{
-                            'text-red-500': day === '日',
-                            'text-blue-500': day === '土'
-                        }">
-                        {{ day }}
+                    <!-- 月のカレンダーヘッダー -->
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div v-for="day in ['日', '月', '火', '水', '木', '金', '土']" :key="day"
+                            class="text-center text-xs font-medium" :class="{
+                                'text-red-500': day === '日',
+                                'text-blue-500': day === '土'
+                            }">
+                            {{ day }}
+                        </div>
                     </div>
-                </div>
 
-                <!-- 月のカレンダー日付 -->
-                <div class="grid grid-cols-7 gap-1">
-                    <div v-for="date in getMonthDates(index)" :key="date.toISOString()"
-                        class="text-center text-xs p-1 min-h-[30px] border" :class="{
-                            'bg-gray-100': date.getMonth() !== index,
-                            'bg-blue-50': isToday(date),
-                            'font-bold': date.getDate() === 1
-                        }">
-                        <span :class="{ 'text-gray-400': date.getMonth() !== index }">
-                            {{ date.getDate() }}
-                        </span>
+                    <!-- 月のカレンダー日付 -->
+                    <div class="grid grid-cols-7 gap-1">
+                        <div v-for="date in getMonthDates(year, index)" :key="date.toISOString()"
+                            class="text-center text-xs p-1 min-h-[30px] border" :class="{
+                                'bg-gray-100': date.getMonth() !== index || date.getFullYear() !== year,
+                                'bg-blue-50': isToday(date),
+                                'font-bold': date.getDate() === 1
+                            }">
+                            <span
+                                :class="{ 'text-gray-400': date.getMonth() !== index || date.getFullYear() !== year }">
+                                {{ date.getDate() }}
+                            </span>
 
-                        <!-- その日のタスクインジケーター -->
-                        <div v-if="getTasksForDate(date).length" class="h-1 w-1 bg-blue-500 rounded-full mx-auto mt-1">
+                            <!-- その日のタスクインジケーター -->
+                            <div v-if="getTasksForDate(date).length"
+                                class="h-1 w-1 bg-blue-500 rounded-full mx-auto mt-1"></div>
                         </div>
                     </div>
                 </div>
@@ -111,9 +120,8 @@ const currentYear = ref(new Date().getFullYear())
 const tasks = ref([])
 
 // 特定の月の日付を取得
-const getMonthDates = (monthIndex) => {
+const getMonthDates = (year, monthIndex) => {
     const dates = []
-    const year = currentYear.value
 
     // 月の最初の日の曜日を取得
     const firstDay = new Date(year, monthIndex, 1).getDay()
@@ -137,6 +145,7 @@ const getMonthDates = (monthIndex) => {
 
     return dates
 }
+
 
 // カレンダーの日付を生成
 const calendarDates = computed(() => {
@@ -215,7 +224,7 @@ const nextMonth = () => {
 // タスクの読み込み
 const loadTasks = async () => {
     const filters = {
-        year: currentYear.value
+        years: [currentYear.value, currentYear.value + 1]
     }
     await taskStore.fetchTasks(filters)
     tasks.value = taskStore.tasks
