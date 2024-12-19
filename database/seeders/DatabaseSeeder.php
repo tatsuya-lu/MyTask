@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            // 他のシーダーがあれば追加
+            TestUserSeeder::class,
         ]);
     }
 }
