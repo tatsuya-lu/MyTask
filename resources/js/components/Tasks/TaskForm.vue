@@ -46,7 +46,7 @@
                 </label>
                 <select id="status" v-model="form.status"
                     class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                    <option value="not_started">未着手</option>
+                    <option value="not_started">新規</option>
                     <option value="in_progress">進行中</option>
                     <option value="completed">完了</option>
                 </select>
@@ -65,10 +65,9 @@
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="due_date">
                     期限日
                 </label>
-                <Datepicker v-model="form.due_date" format="yyyy年MM月dd日" locale="ja" cancel-text="キャンセル"
-                select-text="選択" :enable-time-picker="false"
-                    :month-picker="false" :year-picker="false" placeholder="期限日を選択" position="left" :dark="false"
-                    class="w-full" />
+                <Datepicker v-model="form.due_date" format="yyyy年MM月dd日" model-type="yyyy-MM-dd" locale="ja" cancel-text="キャンセル"
+                    select-text="選択" :enable-time-picker="false" :month-picker="false" :year-picker="false"
+                    placeholder="期限日を選択" position="left" :dark="false" class="w-full" />
             </div>
 
             <!-- タグ選択フィールド -->
@@ -212,14 +211,21 @@ onMounted(async () => {
 });
 
 const handleSubmit = async () => {
-    console.log('handleSubmit関数が呼び出されました');
-    console.log('フォームデータ:', form.value);
-    console.log('動的タグ:', dynamicTags.value);
 
     isLoading.value = true;
     errors.value = {};
 
     try {
+        // フォームデータの複製を作成
+        const submitData = { ...form.value };
+
+        // due_dateが存在する場合、フォーマットを変換
+        if (submitData.due_date) {
+            submitData.due_date = new Date(submitData.due_date)
+                .toISOString()
+                .split('T')[0]; // 'YYYY-MM-DD'形式に変換
+        }
+
         await axios.get('/sanctum/csrf-cookie');
         // 動的タグの作成
         const newTagPromises = dynamicTags.value.map(tag => {
