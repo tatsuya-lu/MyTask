@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useTeamStore } from '@/stores/team'
 
 import Register from '@/components/Auth/Register.vue'
 import Login from '@/components/Auth/Login.vue'
@@ -7,6 +8,10 @@ import TaskList from '@/components/Tasks/TaskList.vue'
 import TaskForm from '@/components/Tasks/TaskForm.vue'
 import TagManager from "@/components/Tags/TagManager.vue"
 import TeamList from '@/components/Teams/TeamList.vue'
+import TeamDetail from '@/components/Teams/TeamDetail.vue'
+import TeamTasks from '@/components/Teams/TeamTasks.vue'
+import TeamSettings from '@/components/Teams/TeamSettings.vue'
+
 
 const routes = [
     // 認証関連ルート
@@ -70,7 +75,31 @@ const routes = [
         path: '/teams',
         name: 'teams',
         component: TeamList,
-        meta: { requiresAuth: true, requiresPremium: true }
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/teams/:id',
+        name: 'team-detail',
+        component: TeamDetail,
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: '',
+                name: 'team-dashboard',
+                component: TeamTasks
+            },
+            {
+                path: 'tasks',
+                name: 'team-tasks',
+                component: TeamTasks
+            },
+            {
+                path: 'settings',
+                name: 'team-settings',
+                component: TeamSettings,
+                meta: { requiresTeamLeader: true }
+            }
+        ]
     }
 ]
 
@@ -87,7 +116,7 @@ router.beforeEach(async (to, from, next) => {
             try {
                 if (!authStore.user) {
                     const fetchResult = await authStore.fetchUser()
-                    
+
                     if (!fetchResult) {
                         next('/login')
                         return
@@ -102,6 +131,27 @@ router.beforeEach(async (to, from, next) => {
         if (!authStore.isAuthenticated) {
             next('/login')
             return
+        }
+
+        // チームリーダー権限のチェック（認証成功後に実行）
+        if (to.meta.requiresTeamLeader && to.params.id) {
+            const teamStore = useTeamStore()
+            try {
+                const team = await teamStore.fetchTeam(to.params.id)
+                const isLeader = team.members.some(member =>
+                    member.id === authStore.user.id &&
+                    member.pivot.role_id === teamStore.leaderRoleId
+                )
+
+                if (!isLeader) {
+                    next('/teams')
+                    return
+                }
+            } catch (error) {
+                console.error('チーム情報の取得に失敗しました:', error)
+                next('/teams')
+                return
+            }
         }
     }
 

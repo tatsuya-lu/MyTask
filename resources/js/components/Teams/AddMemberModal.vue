@@ -11,23 +11,14 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="user">
                         ユーザーを検索
                     </label>
-                    <input
-                        id="user"
-                        v-model="searchQuery"
-                        type="text"
+                    <input id="user" v-model="searchQuery" type="text"
                         class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        placeholder="メールアドレスまたは名前"
-                        @input="searchUsers"
-                    >
-                    
+                        placeholder="メールアドレスまたは名前" @input="searchUsers">
+
                     <!-- 検索結果 -->
                     <div v-if="searchResults.length > 0" class="mt-2 border rounded">
-                        <div
-                            v-for="user in searchResults"
-                            :key="user.id"
-                            class="p-2 hover:bg-gray-100 cursor-pointer"
-                            @click="selectUser(user)"
-                        >
+                        <div v-for="user in searchResults" :key="user.id" class="p-2 hover:bg-gray-100 cursor-pointer"
+                            @click="selectUser(user)">
                             {{ user.name }} ({{ user.email }})
                         </div>
                     </div>
@@ -38,12 +29,9 @@
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="role">
                         役割
                     </label>
-                    <select
-                        id="role"
-                        v-model="form.role_id"
+                    <select id="role" v-model="form.role_id"
                         class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        required
-                    >
+                        required>
                         <option value="">役割を選択</option>
                         <option v-for="role in roles" :key="role.id" :value="role.id">
                             {{ role.name }}
@@ -53,34 +41,41 @@
 
                 <!-- ボタン -->
                 <div class="flex justify-end space-x-2">
-                    <button
-                        type="button"
-                        @click="$emit('close')"
-                        class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                    >
+                    <button type="button" @click="$emit('close')"
+                        class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
                         キャンセル
                     </button>
-                    <button
-                        type="submit"
+                    <button type="submit"
                         class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                        :disabled="isLoading || !form.user_id || !form.role_id"
-                    >
+                        :disabled="isLoading || !form.user_id || !form.role_id">
                         {{ isLoading ? '追加中...' : '追加' }}
                     </button>
                 </div>
             </form>
         </div>
     </div>
+
+    <div v-if="showMemberLimitWarning" class="text-red-500 text-sm mb-4">
+        メンバー数が上限に達しています（{{ currentMemberCount }}/{{ team.member_limit }}人）
+    </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const props = defineProps({
     team: {
         type: Object,
         required: true
     }
+});
+
+const currentMemberCount = computed(() => {
+    return props.team.members?.length || 0;
+});
+
+const showMemberLimitWarning = computed(() => {
+    return currentMemberCount.value >= props.team.member_limit;
 });
 
 const emit = defineEmits(['close', 'submit']);

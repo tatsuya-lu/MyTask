@@ -58,9 +58,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('tasks.calendar');
 });
 
-// プレミアム会員専用ルート
-Route::middleware(['auth:sanctum', 'premium'])->group(function () {
-    // チーム関連
+// チーム関連のルート
+Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('teams')->group(function () {
         Route::get('/', [TeamController::class, 'index'])->name('teams.index');
         Route::post('/', [TeamController::class, 'store'])->name('teams.store');
@@ -73,5 +72,9 @@ Route::middleware(['auth:sanctum', 'premium'])->group(function () {
             ->name('teams.members.add');
         Route::delete('/{team}/members/{user}', [TeamController::class, 'removeMember'])
             ->name('teams.members.remove');
+            
+        // チームリーダー変更
+        Route::put('/{team}/leader', [TeamController::class, 'changeLeader'])
+            ->name('teams.leader.change');
     });
 });
