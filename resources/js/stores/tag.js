@@ -42,7 +42,7 @@ export const useTagStore = defineStore('tag', {
         async updateTag(tagId, tagData) {
             this.isLoading = true;
             try {
-                const response = await api.put(`/tags/${tagId}`, tagData);
+                const response = await axios.put(`/tags/${tagId}`, tagData);
                 const index = this.tags.findIndex(tag => tag.id === tagId);
                 if (index !== -1) {
                     this.tags[index] = response.data;
@@ -59,7 +59,7 @@ export const useTagStore = defineStore('tag', {
         async deleteTag(tagId) {
             this.isLoading = true;
             try {
-                await api.delete(`/tags/${tagId}`);
+                await axios.delete(`/tags/${tagId}`);
                 this.tags = this.tags.filter(tag => tag.id !== tagId);
             } catch (error) {
                 this.error = error.response?.data?.message || 'タグの削除に失敗しました';
