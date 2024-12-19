@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->foreignId('owner_id')->constrained('users')->onDelete('cascade');
+            $table->integer('member_limit')->default(10);
+            $table->boolean('is_premium_team')->default(false);
             $table->timestamps();
         });
     }
@@ -25,6 +27,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('teams');
+        Schema::table('teams', function (Blueprint $table) {
+            $table->dropColumn(['member_limit', 'is_premium_team']);
+        });
     }
 };
