@@ -17,6 +17,16 @@ class TeamController extends Controller
 
     public function store(Request $request)
     {
+        $user = auth()->user();
+
+        // チーム数の制限チェック
+        $teamsCount = $user->ownedTeams()->count();
+        if ($teamsCount >= 3 && !$user->isPremium()) {
+            return response()->json([
+                'message' => 'チーム数の上限に達しました。プレミアムプランにアップグレードすると、より多くのチームを作成できます。'
+            ], 403);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string'
@@ -25,13 +35,16 @@ class TeamController extends Controller
         $team = Team::create([
             'name' => $validated['name'],
             'description' => $validated['description'],
-            'owner_id' => auth()->id()
+            'owner_id' => $user->id,
+            'member_limit' => $user->isPremium() ? 50 : 10,
+            'is_premium_team' => $user->isPremium()
         ]);
 
+        // オーナーをリーダーとして追加
         $leaderRole = Role::where('slug', 'leader')->first();
-        $team->members()->attach(auth()->id(), ['role_id' => $leaderRole->id]);
+        $team->members()->attach($user->id, ['role_id' => $leaderRole->id]);
 
-        return response()->json($team, 201);
+        return response()->json($team->load(['members', 'owner']), 201);
     }
 
     public function show(Team $team)
@@ -64,23 +77,27 @@ class TeamController extends Controller
     {
         $this->authorize('addMember', $team);
 
+        // メンバー数の制限チェック
+        if ($team->members()->count() >= $team->member_limit) {
+            return response()->json([
+                'message' => 'チームのメンバー数上限に達しました。'
+            ], 403);
+        }
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'role_id' => 'required|exists:roles,id'
-        ], [
-            'user_id.exists' => '指定されたユーザーが見つかりません。',
-            'role_id.exists' => '指定された役割が見つかりません。'
         ]);
 
-        if ($team->members()->where('user_id', $validated['user_id'])->exists()) {
-            return response()->json(['message' => 'すでにチームのメンバーです。'], 422);
-        }
-
-        // チームリーダーが既に存在する場合のチェック
-        if ($validated['role_id'] === Role::where('slug', 'leader')->first()->id) {
-            if ($team->members()->wherePivot('role_id', $validated['role_id'])->exists()) {
-                return response()->json(['message' => 'チームリーダーは既に存在します。'], 422);
-            }
+        // リーダーの重複チェック
+        $leaderRole = Role::where('slug', 'leader')->first();
+        if (
+            $validated['role_id'] == $leaderRole->id &&
+            $team->members()->wherePivot('role_id', $leaderRole->id)->exists()
+        ) {
+            return response()->json([
+                'message' => 'チームリーダーは既に存在します。'
+            ], 422);
         }
 
         $team->members()->attach($validated['user_id'], [
