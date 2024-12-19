@@ -67,10 +67,20 @@ class TeamController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'role_id' => 'required|exists:roles,id'
+        ], [
+            'user_id.exists' => '指定されたユーザーが見つかりません。',
+            'role_id.exists' => '指定された役割が見つかりません。'
         ]);
 
         if ($team->members()->where('user_id', $validated['user_id'])->exists()) {
             return response()->json(['message' => 'すでにチームのメンバーです。'], 422);
+        }
+
+        // チームリーダーが既に存在する場合のチェック
+        if ($validated['role_id'] === Role::where('slug', 'leader')->first()->id) {
+            if ($team->members()->wherePivot('role_id', $validated['role_id'])->exists()) {
+                return response()->json(['message' => 'チームリーダーは既に存在します。'], 422);
+            }
         }
 
         $team->members()->attach($validated['user_id'], [
@@ -78,6 +88,36 @@ class TeamController extends Controller
         ]);
 
         return response()->json(['message' => 'メンバーを追加しました。']);
+    }
+
+    public function changeLeader(Request $request, Team $team)
+    {
+        $this->authorize('update', $team);
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        $leaderRole = Role::where('slug', 'leader')->first();
+        $memberRole = Role::where('slug', 'member')->first();
+
+        // 現在のリーダーをメンバーに変更
+        $currentLeader = $team->members()
+            ->wherePivot('role_id', $leaderRole->id)
+            ->first();
+
+        if ($currentLeader) {
+            $team->members()->updateExistingPivot($currentLeader->id, [
+                'role_id' => $memberRole->id
+            ]);
+        }
+
+        // 新しいリーダーを設定
+        $team->members()->updateExistingPivot($validated['user_id'], [
+            'role_id' => $leaderRole->id
+        ]);
+
+        return response()->json(['message' => 'チームリーダーを変更しました。']);
     }
 
     public function removeMember(Team $team, User $user)

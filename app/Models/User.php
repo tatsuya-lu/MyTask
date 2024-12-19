@@ -66,11 +66,13 @@ class User extends Authenticatable
         return $this->is_premium && $this->premium_expires_at->isFuture();
     }
 
-    public function isTeamLeader(Team $team)
+    public function isTeamLeader(Team $team): bool
     {
+        $leaderRole = Role::where('slug', 'leader')->first();
+
         return $this->teams()
             ->wherePivot('team_id', $team->id)
-            ->wherePivot('role_id', Role::where('slug', 'leader')->first()->id)
+            ->wherePivot('role_id', $leaderRole->id)
             ->exists();
     }
 
