@@ -21,7 +21,7 @@ class TeamController extends Controller
 
         // チーム数の制限チェック
         $teamsCount = $user->ownedTeams()->count();
-        if ($teamsCount >= 3 && !$user->isPremium()) {
+        if (!$user->is_premium && $teamsCount >= 3) {  // isPremium()をis_premiumに修正
             return response()->json([
                 'message' => 'チーム数の上限に達しました。プレミアムプランにアップグレードすると、より多くのチームを作成できます。'
             ], 403);
@@ -34,14 +34,19 @@ class TeamController extends Controller
 
         $team = Team::create([
             'name' => $validated['name'],
-            'description' => $validated['description'],
+            'description' => $validated['description'] ?? '',  // null対策
             'owner_id' => $user->id,
-            'member_limit' => $user->isPremium() ? 50 : 10,
-            'is_premium_team' => $user->isPremium()
+            'member_limit' => $user->is_premium ? 50 : 10,
+            'is_premium_team' => $user->is_premium
         ]);
 
+        // リーダーロールの取得（または作成）
+        $leaderRole = Role::firstOrCreate(
+            ['slug' => 'leader'],
+            ['name' => 'リーダー']
+        );
+
         // オーナーをリーダーとして追加
-        $leaderRole = Role::where('slug', 'leader')->first();
         $team->members()->attach($user->id, ['role_id' => $leaderRole->id]);
 
         return response()->json($team->load(['members', 'owner']), 201);
@@ -91,6 +96,9 @@ class TeamController extends Controller
 
         // リーダーの重複チェック
         $leaderRole = Role::where('slug', 'leader')->first();
+        $memberRole = Role::where('slug', 'member')->first();
+
+        // リーダー追加時の重複チェック
         if (
             $validated['role_id'] == $leaderRole->id &&
             $team->members()->wherePivot('role_id', $leaderRole->id)->exists()

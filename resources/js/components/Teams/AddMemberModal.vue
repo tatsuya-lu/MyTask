@@ -62,6 +62,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import axios from 'axios';
 
 const props = defineProps({
     team: {
@@ -92,7 +93,7 @@ const isLoading = ref(false);
 
 onMounted(async () => {
     try {
-        const response = await api.get('/roles');
+        const response = await axios.get('/api/roles');
         roles.value = response.data;
     } catch (error) {
         console.error('役割の取得に失敗しました:', error);
@@ -106,7 +107,7 @@ const searchUsers = async () => {
     }
 
     try {
-        const response = await api.get(`/users/search?q=${searchQuery.value}`);
+        const response = await axios.get(`/api/users/search?q=${searchQuery.value}`);
         searchResults.value = response.data;
     } catch (error) {
         console.error('ユーザー検索に失敗しました:', error);
@@ -119,7 +120,22 @@ const selectUser = (user) => {
     searchResults.value = [];
 };
 
-const handleSubmit = () => {
-    emit('submit', form.value);
+const handleSubmit = async () => {
+    if (!form.value.user_id || !form.value.role_id) return;
+
+    try {
+        isLoading.value = true;
+        // awaitを追加し、submitイベントの結果を待つ
+        await emit('submit', {
+            user_id: form.value.user_id,
+            role_id: parseInt(form.value.role_id) // 数値型に変換
+        });
+        // 成功した場合のみcloseを実行
+        emit('close');
+    } catch (error) {
+        console.error('メンバーの追加に失敗しました:', error);
+    } finally {
+        isLoading.value = false;
+    }
 };
 </script>

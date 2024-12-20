@@ -11,20 +11,25 @@ export const useTeamStore = defineStore('team', {
     }),
     getters: {
         ownedTeamsCount: (state) => {
-            return state.teams.filter(team => team.owner_id === auth.user?.id).length;
+            return state.teams.filter(team =>
+                team.owner_id === auth.user?.id
+            ).length;
         },
         canCreateTeam: (state) => {
             const user = auth.user;
             if (!user) return false;
-            return user.is_premium || state.teams.filter(team => team.owner_id === user.id).length < 3;
+            return user.is_premium || state.teams.filter(team =>
+                team.owner_id === user.id
+            ).length < 3;
         }
     },
     actions: {
-        async fetchTeams() {
+        async fetchTeam(teamId) {
             this.isLoading = true;
             try {
-                const response = await axios.get('/api/teams');
-                this.teams = response.data;
+                const response = await axios.get(`/api/teams/${teamId}`);
+                this.currentTeam = response.data;
+                return response.data;
             } catch (error) {
                 this.error = error.response?.data?.message || 'チームの取得に失敗しました';
                 throw error;
@@ -32,7 +37,23 @@ export const useTeamStore = defineStore('team', {
                 this.isLoading = false;
             }
         },
-
+        async fetchTeams() {
+            this.isLoading = true;
+            try {
+                const response = await axios.get('/api/teams');
+                if (response.data) {
+                    this.teams = response.data;
+                    return response.data;
+                }
+                throw new Error('チームデータが取得できませんでした');
+            } catch (error) {
+                this.error = error.response?.data?.message || 'チームの取得に失敗しました';
+                console.error('fetchTeams error:', error);
+                throw error;
+            } finally {
+                this.isLoading = false;
+            }
+        },
         async createTeam(teamData) {
             this.isLoading = true;
             try {
@@ -79,10 +100,16 @@ export const useTeamStore = defineStore('team', {
 
         async addMember(teamId, userData) {
             try {
-                await axios.post(`/api/teams/${teamId}/members`, userData);
+                console.log('Store addMember:', teamId, userData);
+                const response = await axios.post(`/api/teams/${teamId}/members`, userData);
+                if (!response.data) {
+                    throw new Error('メンバーの追加に失敗しました');
+                }
                 await this.fetchTeams();
+                return response.data;
             } catch (error) {
                 this.error = error.response?.data?.message || 'メンバーの追加に失敗しました';
+                console.error('addMember error:', error);
                 throw error;
             }
         },

@@ -65,9 +65,9 @@
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="due_date">
                     期限日
                 </label>
-                <Datepicker v-model="form.due_date" format="yyyy年MM月dd日" model-type="yyyy-MM-dd" locale="ja" cancel-text="キャンセル"
-                    select-text="選択" :enable-time-picker="false" :month-picker="false" :year-picker="false"
-                    placeholder="期限日を選択" position="left" :dark="false" class="w-full" />
+                <Datepicker v-model="form.due_date" format="yyyy年MM月dd日" model-type="yyyy-MM-dd" locale="ja"
+                    cancel-text="キャンセル" select-text="選択" :enable-time-picker="false" :month-picker="false"
+                    :year-picker="false" placeholder="期限日を選択" position="left" :dark="false" class="w-full" />
             </div>
 
             <!-- タグ選択フィールド -->
@@ -160,6 +160,13 @@ const form = ref({
     tags: []
 });
 
+const props = defineProps({
+    team: {
+        type: Object,
+        default: null
+    }
+});
+
 const dynamicTags = ref([]);
 const newTag = ref({
     name: '',
@@ -211,25 +218,26 @@ onMounted(async () => {
 });
 
 const handleSubmit = async () => {
-
     isLoading.value = true;
     errors.value = {};
 
     try {
-        // フォームデータの複製を作成
         const submitData = { ...form.value };
-
-        // due_dateが存在する場合、フォーマットを変換
         if (submitData.due_date) {
             submitData.due_date = new Date(submitData.due_date)
                 .toISOString()
-                .split('T')[0]; // 'YYYY-MM-DD'形式に変換
+                .split('T')[0];
+        }
+
+        // チームタスクの場合はチームIDを追加
+        if (props.team) {
+            submitData.team_id = props.team.id;
         }
 
         await axios.get('/sanctum/csrf-cookie');
-        // 動的タグの作成
+
+        // 動的タグの処理
         const newTagPromises = dynamicTags.value.map(tag => {
-            console.log('タグ作成:', tag);
             return tagStore.createTag({
                 name: tag.name,
                 color: tag.color
@@ -237,25 +245,30 @@ const handleSubmit = async () => {
         });
 
         const createdTags = await Promise.all(newTagPromises);
-        console.log('作成されたタグ:', createdTags);
-
-        // 新しく作成されたタグのIDを追加
         const newTagIds = createdTags.map(tag => tag.id);
         form.value.tags = [...form.value.tags, ...newTagIds];
 
-        console.log('最終的なタグID:', form.value.tags);
-
         // タスクの作成または更新
         if (isEditing.value) {
-            await taskStore.updateTask(route.params.id, form.value);
+            await taskStore.updateTask(route.params.id, submitData);
         } else {
-            await taskStore.createTask(form.value);
+            if (props.team) {
+                // チームタスクの作成
+                await axios.post(`/api/teams/${props.team.id}/tasks`, submitData);
+            } else {
+                // 個人タスクの作成
+                await taskStore.createTask(submitData);
+            }
         }
 
-        router.push({ name: 'tasks' });
+        // チームタスクの場合はチーム詳細ページに戻る
+        if (props.team) {
+            router.push({ name: 'team-tasks', params: { id: props.team.id } });
+        } else {
+            router.push({ name: 'tasks' });
+        }
     } catch (error) {
         console.error('エラーの詳細:', error);
-
         if (error.response?.status === 422) {
             errors.value = error.response.data.errors;
         }
