@@ -6,7 +6,11 @@ export const useAuthStore = defineStore('auth', {
         user: null,
         token: localStorage.getItem('token') || null
     }),
-    
+
+    getters: {
+        isAuthenticated: (state) => !!state.token
+    },
+
     actions: {
         async register(userData) {
             try {
@@ -40,30 +44,27 @@ export const useAuthStore = defineStore('auth', {
                 this.token = null
                 localStorage.removeItem('token')
                 delete axios.defaults.headers.common['Authorization']
-                
+
                 window.location.href = '/login'
             }
         },
 
         async fetchUser() {
-            if (!this.token) return
-        
+            if (!this.token) return false;
+
             try {
-                await axios.get('/sanctum/csrf-cookie')
-                axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
-                const response = await axios.get('/api/auth/profile')
-                this.user = response.data.user
-                return true
+                await axios.get('/sanctum/csrf-cookie');
+                axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
+                const response = await axios.get('/api/auth/profile');
+                this.user = response.data.user;
+                return true;
             } catch (error) {
-                console.error('ユーザー情報取得エラー:', error)
-                
-                this.token = null
-                localStorage.removeItem('token')
-                delete axios.defaults.headers.common['Authorization']
-                this.user = null
-                
-                window.location.href = '/login'
-                return false
+                console.error('ユーザー情報取得エラー:', error);
+                this.token = null;
+                localStorage.removeItem('token');
+                delete axios.defaults.headers.common['Authorization'];
+                this.user = null;
+                return false;
             }
         }
     },

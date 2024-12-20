@@ -109,53 +109,63 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-    const authStore = useAuthStore()
+    const authStore = useAuthStore();
 
+    // ゲストのみのルート（ログイン・登録画面）
+    if (to.meta.requiresGuest) {
+        if (authStore.isAuthenticated) {
+            next('/dashboard');
+            return;
+        }
+        next();
+        return;
+    }
+
+    // 認証が必要なルート
     if (to.meta.requiresAuth) {
-        if (authStore.token) {
-            try {
-                if (!authStore.user) {
-                    const fetchResult = await authStore.fetchUser()
+        if (!authStore.token) {
+            next('/login');
+            return;
+        }
 
-                    if (!fetchResult) {
-                        next('/login')
-                        return
-                    }
+        // ユーザー情報の取得（まだ取得していない場合）
+        if (!authStore.user) {
+            try {
+                const success = await authStore.fetchUser();
+                if (!success) {
+                    next('/login');
+                    return;
                 }
             } catch (error) {
-                next('/login')
-                return
+                console.error('ユーザー情報の取得に失敗:', error);
+                next('/login');
+                return;
             }
         }
 
-        if (!authStore.isAuthenticated) {
-            next('/login')
-            return
-        }
-
-        // チームリーダー権限のチェック（認証成功後に実行）
+        // チームリーダー権限のチェック
         if (to.meta.requiresTeamLeader && to.params.id) {
-            const teamStore = useTeamStore()
+            const teamStore = useTeamStore();
             try {
-                const team = await teamStore.fetchTeam(to.params.id)
-                const isLeader = team.members.some(member =>
-                    member.id === authStore.user.id &&
+                const team = await teamStore.fetchTeam(to.params.id);
+                const isLeader = team?.members?.some(member =>
+                    member.id === authStore.user?.id &&
                     member.pivot.role_id === teamStore.leaderRoleId
-                )
+                );
 
                 if (!isLeader) {
-                    next('/teams')
-                    return
+                    next('/teams');
+                    return;
                 }
             } catch (error) {
-                console.error('チーム情報の取得に失敗しました:', error)
-                next('/teams')
-                return
+                console.error('チーム情報の取得に失敗:', error);
+                next('/teams');
+                return;
             }
         }
     }
 
-    next()
-})
+    next();
+});
 
 export default router
