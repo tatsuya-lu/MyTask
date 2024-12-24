@@ -15,10 +15,11 @@ class TaskResource extends JsonResource
             'id' => $this->id,
             'title' => $this->title,
             'description' => $this->description,
-            'status' => $this->status->value, // statusの値を直接取得
-            'status_label' => $this->status->label(), // 既存のstatus列挙型インスタンスから直接ラベルを呼び出し
-            'priority' => $this->priority->value, // priorityも同様に
-            'priority_label' => $this->priority->label(), // 既存のpriority列挙型インスタンスから直接ラベルを呼び出し
+            'status' => $this->status->value,
+            'status_label' => $this->status->label(),
+            'priority' => $this->priority->value,
+            'priority_label' => $this->priority->label(),
+            'progress' => $this->progress,
             'due_date' => $this->due_date,
             'is_archived' => $this->is_archived,
             'tags' => $this->whenLoaded('tags'),

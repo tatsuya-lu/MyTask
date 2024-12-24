@@ -20,6 +20,8 @@ class Task extends Model
         'status',
         'progress',
         'due_date',
+        'is_archived',
+        'team_id'
     ];
 
     protected $casts = [
