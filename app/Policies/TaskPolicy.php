@@ -21,13 +21,7 @@ class TaskPolicy
      */
     public function view(User $user, Task $task): bool
     {
-        //個人タスクの場合
-        if (!$task->team_id) {
-            return $user->id === $task->user_id;
-        }
-
-        //チームタスクの場合
-        return $user->teams->contains($task->team_id);
+        return $user->id === $task->user_id;
     }
 
     /**
@@ -43,19 +37,10 @@ class TaskPolicy
      */
     public function update(User $user, Task $task): bool
     {
-        // アーカイブされたタスクは編集不可
         if ($task->is_archived) {
             return false;
         }
-
-        // 個人タスクの場合
-        if (!$task->team_id) {
-            return $user->id === $task->user_id;
-        }
-
-        // チームタスクの場合
-        return $user->id === $task->user_id ||
-            $user->isTeamLeader($task->team);
+        return $user->id === $task->user_id;
     }
 
     /**
@@ -66,12 +51,7 @@ class TaskPolicy
         if ($task->is_archived) {
             return false;
         }
-
-        if (!$task->team_id) {
-            return $user->id === $task->user_id;
-        }
-
-        return $user->isTeamLeader($task->team);
+        return $user->id === $task->user_id;
     }
 
     /**

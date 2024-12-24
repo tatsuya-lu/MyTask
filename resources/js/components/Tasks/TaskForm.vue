@@ -174,13 +174,6 @@ const form = ref({
     tags: []
 });
 
-const props = defineProps({
-    team: {
-        type: Object,
-        default: null
-    }
-});
-
 const dynamicTags = ref([]);
 const newTag = ref({
     name: '',
@@ -242,14 +235,8 @@ const handleSubmit = async () => {
                 : submitData.due_date;
         }
 
-        // チームタスクの場合はチームIDを追加
-        if (props.team) {
-            submitData.team_id = props.team.id;
-        }
-
         await axios.get('/sanctum/csrf-cookie');
 
-        // 動的タグの処理
         const newTagPromises = dynamicTags.value.map(tag => {
             return tagStore.createTag({
                 name: tag.name,
@@ -259,27 +246,18 @@ const handleSubmit = async () => {
 
         const createdTags = await Promise.all(newTagPromises);
         const newTagIds = createdTags.map(tag => tag.id);
-        form.value.tags = [...form.value.tags, ...newTagIds];
+        submitData.tags = [...(submitData.tags || []), ...newTagIds];
 
-        // タスクの作成または更新
         if (isEditing.value) {
             await taskStore.updateTask(route.params.id, submitData);
         } else {
-            if (props.team) {
-                // チームタスクの作成
-                await axios.post(`/api/teams/${props.team.id}/tasks`, submitData);
-            } else {
-                // 個人タスクの作成
-                await taskStore.createTask(submitData);
+            const newTask = await taskStore.createTask(submitData);
+            if (!newTask || !newTask.id) {
+                throw new Error('タスクの作成に失敗しました');
             }
         }
 
-        // チームタスクの場合はチーム詳細ページに戻る
-        if (props.team) {
-            router.push({ name: 'team-tasks', params: { id: props.team.id } });
-        } else {
-            router.push({ name: 'tasks' });
-        }
+        router.push({ name: 'tasks' });
     } catch (error) {
         console.error('エラーの詳細:', error);
         if (error.response?.status === 422) {

@@ -64,11 +64,11 @@ export const useTaskStore = defineStore('task', {
         async createTask(taskData) {
             this.isLoading = true;
             try {
-                // CSRFトークンを明示的に取得
                 await axios.get('/sanctum/csrf-cookie');
                 const response = await axios.post('/api/tasks', taskData);
-                this.tasks.push(response.data);
-                return response.data;
+                const newTask = response.data.data || response.data;
+                this.tasks.push(newTask);
+                return newTask;
             } catch (error) {
                 this.error = error.response?.data?.message || 'タスクの作成に失敗しました';
                 throw error;

@@ -20,8 +20,7 @@ class Task extends Model
         'status',
         'progress',
         'due_date',
-        'is_archived',
-        'team_id'
+        'is_archived'
     ];
 
     protected $casts = [
@@ -39,10 +38,5 @@ class Task extends Model
     {
         return $this->belongsToMany(Tag::class, 'tag_task')
             ->withTimestamps();
-    }
-
-    public function team()
-    {
-        return $this->belongsTo(Team::class);
     }
 }

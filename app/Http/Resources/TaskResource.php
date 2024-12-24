@@ -23,7 +23,6 @@ class TaskResource extends JsonResource
             'due_date' => $this->due_date,
             'is_archived' => $this->is_archived,
             'tags' => $this->whenLoaded('tags'),
-            'team' => $this->whenLoaded('team'),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

@@ -20,7 +20,7 @@ class TaskService
             $task->tags()->sync($tags);
         }
 
-        return $task->load(['tags', 'team']);
+        return $task->load(['tags']);
     }
 
     public function updateTask(Task $task, array $data)
@@ -38,18 +38,14 @@ class TaskService
             $task->tags()->sync($tags);
         }
 
-        return $task->load(['tags', 'team']);
+        return $task->load(['tags']);
     }
 
     public function getFilteredTasks(array $filters = [])
     {
-        $query = Task::with(['tags', 'team'])
-            ->where(function ($q) {
-                $q->where('user_id', auth()->id())
-                    ->orWhereIn('team_id', auth()->user()->teams->pluck('id'));
-            });
+        $query = Task::with(['tags'])
+            ->where('user_id', auth()->id());
 
-        // 年でフィルタリング
         if (!empty($filters['year'])) {
             $query->whereYear('due_date', $filters['year']);
         }
@@ -66,10 +62,6 @@ class TaskService
 
         if (!empty($filters['priority'])) {
             $query->where('priority', $filters['priority']);
-        }
-
-        if (!empty($filters['team_id'])) {
-            $query->where('team_id', $filters['team_id']);
         }
 
         if (isset($filters['is_archived'])) {
