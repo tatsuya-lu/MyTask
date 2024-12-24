@@ -55,9 +55,10 @@
             <!-- 進捗 -->
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="progress">
-                    進捗 ({{ form.progress }}%)
+                    進捗 ({{ Number(form.progress) }}%)
                 </label>
-                <input id="progress" v-model="form.progress" type="range" min="0" max="100" step="10" class="w-full">
+                <input id="progress" v-model.number="form.progress" type="range" min="0" max="100" step="10"
+                    class="w-full">
             </div>
 
             <!-- 期限日 -->
@@ -65,9 +66,9 @@
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="due_date">
                     期限日
                 </label>
-                <Datepicker v-model="form.due_date" format="yyyy年MM月dd日" model-type="yyyy-MM-dd" locale="ja"
-                    cancel-text="キャンセル" select-text="選択" :enable-time-picker="false" :month-picker="false"
-                    :year-picker="false" placeholder="期限日を選択" position="left" :dark="false" class="w-full" />
+                <Datepicker v-model="form.due_date" :format="formatDate" :parse="parseDate" locale="ja"
+                    :enable-time-picker="false" :clearable="true" :auto-apply="true" placeholder="期限日を選択"
+                    input-class-name="w-full px-4 py-2 border rounded-lg" />
             </div>
 
             <!-- タグ選択フィールド -->
@@ -150,10 +151,23 @@ const isEditing = computed(() => !!route.params.id);
 const isLoading = ref(false);
 const errors = ref({});
 
+const formatDate = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+};
+
+const parseDate = (dateStr) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return isNaN(date.getTime()) ? null : date;
+};
+
 const form = ref({
     title: '',
     description: '',
-    priority: 'medium',
+    priority: 'low',
     status: 'not_started',
     progress: 0,
     due_date: null,
@@ -203,12 +217,11 @@ onMounted(async () => {
 
             form.value = {
                 ...task,
-                due_date: task.due_date
-                    ? new Date(task.due_date)
-                    : null,
-                tags: task.tags
-                    ? task.tags.map(tag => tag.id)
-                    : [] // tagsがnullの場合は空配列にする
+                progress: Number(task.progress || 0),
+                due_date: task.due_date ? parseDate(task.due_date) : null,
+                priority: task.priority || 'low',
+                status: task.status || 'not_started',
+                tags: task.tags ? task.tags.map(tag => tag.id) : []
             };
         } catch (error) {
             console.error('タスクの取得に失敗しました:', error);
@@ -224,9 +237,9 @@ const handleSubmit = async () => {
     try {
         const submitData = { ...form.value };
         if (submitData.due_date) {
-            submitData.due_date = new Date(submitData.due_date)
-                .toISOString()
-                .split('T')[0];
+            submitData.due_date = submitData.due_date instanceof Date
+                ? submitData.due_date.toISOString().split('T')[0]
+                : submitData.due_date;
         }
 
         // チームタスクの場合はチームIDを追加

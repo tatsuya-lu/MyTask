@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Enums\TaskStatus;
+use App\Enums\TaskPriority;
 
 class TaskRequest extends FormRequest
 {
@@ -12,6 +14,14 @@ class TaskRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation()
+    {
+        $this->merge([
+            'status' => $this->status ?? TaskStatus::NOT_STARTED->value,
+            'priority' => $this->priority ?? TaskPriority::LOW->value,
+        ]);
     }
 
     /**
@@ -24,9 +34,9 @@ class TaskRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'priority' => 'required|in:low,medium,high',
-            'status' => 'required|in:not_started,in_progress,completed',
-            'progress' => 'required|integer|min:0|max:100',
+            'priority' => 'in:low,medium,high',
+            'status' => 'in:not_started,in_progress,completed',
+            'progress' => 'nullable|integer|min:0|max:100',
             'due_date' => 'nullable|date_format:Y-m-d',
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id'
@@ -37,11 +47,8 @@ class TaskRequest extends FormRequest
     {
         return [
             'title.required' => 'タイトルは必須です。',
-            'priority.required' => '優先度は必須です。',
             'priority.in' => '無効な優先度が指定されています。',
-            'status.required' => 'ステータスは必須です。',
             'status.in' => '無効なステータスが指定されています。',
-            'progress.required' => '進捗は必須です。',
             'progress.integer' => '進捗は整数で指定してください。',
             'progress.min' => '進捗は0以上である必要があります。',
             'progress.max' => '進捗は100以下である必要があります。'
