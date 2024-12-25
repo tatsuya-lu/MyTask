@@ -122,9 +122,9 @@
                 <button type="submit"
                     class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                     :disabled="isLoading">
-                    {{ isLoading ? '保存中...' : (isEditing ? '更新' : '作成') }}
+                    {{ isLoading ? '保存中...' : (taskId ? '更新' : '作成') }}
                 </button>
-                <button type="button" @click="router.push({ name: 'tasks' })"
+                <button type="button" @click="handleCancel"
                     class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
                     キャンセル
                 </button>
@@ -174,6 +174,19 @@ const form = ref({
     tags: []
 });
 
+const props = defineProps({
+    taskId: {
+        type: [Number, String],
+        default: null
+    },
+    isModal: {
+        type: Boolean,
+        default: false
+    }
+})
+
+const emit = defineEmits(['saved', 'cancelled'])
+
 const dynamicTags = ref([]);
 const newTag = ref({
     name: '',
@@ -195,18 +208,74 @@ const removeTag = (index) => {
     dynamicTags.value.splice(index, 1);
 };
 
+const handleSubmit = async () => {
+    isLoading.value = true
+    errors.value = {}
+
+    try {
+        const submitData = { ...form.value }
+        if (submitData.due_date) {
+            submitData.due_date = submitData.due_date instanceof Date
+                ? submitData.due_date.toISOString().split('T')[0]
+                : submitData.due_date
+        }
+
+        await axios.get('/sanctum/csrf-cookie')
+
+        const newTagPromises = dynamicTags.value.map(tag => {
+            return tagStore.createTag({
+                name: tag.name,
+                color: tag.color
+            })
+        })
+
+        const createdTags = await Promise.all(newTagPromises)
+        const newTagIds = createdTags.map(tag => tag.id)
+        submitData.tags = [...(submitData.tags || []), ...newTagIds]
+
+        if (props.taskId) {
+            await taskStore.updateTask(props.taskId, submitData)
+        } else {
+            const newTask = await taskStore.createTask(submitData)
+            if (!newTask || !newTask.id) {
+                throw new Error('タスクの作成に失敗しました')
+            }
+        }
+
+        if (props.isModal) {
+            emit('saved')
+        } else {
+            router.push({ name: 'tasks' })
+        }
+    } catch (error) {
+        console.error('エラーの詳細:', error)
+        if (error.response?.status === 422) {
+            errors.value = error.response.data.errors
+        }
+    } finally {
+        isLoading.value = false
+    }
+}
+
+const handleCancel = () => {
+    if (props.isModal) {
+        emit('cancelled')
+    } else {
+        router.push({ name: 'tasks' })
+    }
+}
 
 onMounted(async () => {
     try {
-        await tagStore.fetchTags();
+        await tagStore.fetchTags()
     } catch (error) {
-        console.error('タグの取得に失敗しました:', error);
+        console.error('タグの取得に失敗しました:', error)
     }
 
-    if (isEditing.value) {
+    if (props.taskId) {
         try {
-            const response = await axios.get(`/api/tasks/${route.params.id}`);
-            const task = response.data.data;
+            const response = await axios.get(`/api/tasks/${props.taskId}`)
+            const task = response.data.data
 
             form.value = {
                 ...task,
@@ -215,56 +284,13 @@ onMounted(async () => {
                 priority: task.priority || 'low',
                 status: task.status || 'not_started',
                 tags: task.tags ? task.tags.map(tag => tag.id) : []
-            };
+            }
         } catch (error) {
-            console.error('タスクの取得に失敗しました:', error);
-            router.push({ name: 'tasks' });
-        }
-    }
-});
-
-const handleSubmit = async () => {
-    isLoading.value = true;
-    errors.value = {};
-
-    try {
-        const submitData = { ...form.value };
-        if (submitData.due_date) {
-            submitData.due_date = submitData.due_date instanceof Date
-                ? submitData.due_date.toISOString().split('T')[0]
-                : submitData.due_date;
-        }
-
-        await axios.get('/sanctum/csrf-cookie');
-
-        const newTagPromises = dynamicTags.value.map(tag => {
-            return tagStore.createTag({
-                name: tag.name,
-                color: tag.color
-            });
-        });
-
-        const createdTags = await Promise.all(newTagPromises);
-        const newTagIds = createdTags.map(tag => tag.id);
-        submitData.tags = [...(submitData.tags || []), ...newTagIds];
-
-        if (isEditing.value) {
-            await taskStore.updateTask(route.params.id, submitData);
-        } else {
-            const newTask = await taskStore.createTask(submitData);
-            if (!newTask || !newTask.id) {
-                throw new Error('タスクの作成に失敗しました');
+            console.error('タスクの取得に失敗しました:', error)
+            if (!props.isModal) {
+                router.push({ name: 'tasks' })
             }
         }
-
-        router.push({ name: 'tasks' });
-    } catch (error) {
-        console.error('エラーの詳細:', error);
-        if (error.response?.status === 422) {
-            errors.value = error.response.data.errors;
-        }
-    } finally {
-        isLoading.value = false;
     }
-};
+})
 </script>

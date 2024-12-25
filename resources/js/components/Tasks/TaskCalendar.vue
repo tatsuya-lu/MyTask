@@ -35,14 +35,13 @@
                     </div>
 
                     <!-- その日のタスク一覧 -->
-                    <div class="space-y-1">
-                        <div v-for="task in getTasksForDate(date)" :key="task.id" class="text-sm p-1 rounded" :class="{
+                    <div v-for="task in getTasksForDate(date)" :key="task.id" @click="handleTaskClick(task.id)"
+                        class="text-sm p-1 rounded cursor-pointer hover:opacity-75" :class="{
                             'bg-red-100': task.priority === 'high',
                             'bg-yellow-100': task.priority === 'medium',
                             'bg-green-100': task.priority === 'low'
                         }">
-                            {{ task.title }}
-                        </div>
+                        {{ task.title }}
                     </div>
                 </div>
             </div>
@@ -107,17 +106,55 @@
                 </div>
             </div>
         </div>
+        <!-- タスク編集モーダル -->
+        <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                <div class="p-4 border-b flex justify-between items-center">
+                    <h2 class="text-xl font-bold">タスクの編集</h2>
+                    <button @click="closeEditModal" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="p-4">
+                    <TaskForm v-if="selectedTaskId" :task-id="selectedTaskId" :is-modal="true" @saved="handleTaskSaved"
+                        @cancelled="closeEditModal" />
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useTaskStore } from '@/stores/task'
+import TaskForm from './TaskForm.vue'
 
 const taskStore = useTaskStore()
 const currentDate = ref(new Date())
 const currentYear = ref(new Date().getFullYear())
 const tasks = ref([])
+
+const showEditModal = ref(false)
+const selectedTaskId = ref(null)
+
+// タスクをクリックしたときのハンドラー
+const handleTaskClick = (taskId) => {
+    selectedTaskId.value = taskId
+    showEditModal.value = true
+}
+
+// モーダルを閉じる
+const closeEditModal = () => {
+    showEditModal.value = false
+    selectedTaskId.value = null
+}
+
+// タスクが保存されたときのハンドラー
+const handleTaskSaved = async () => {
+    await loadTasks()  // タスク一覧を再読み込み
+    closeEditModal()
+}
 
 // 特定の月の日付を取得
 const getMonthDates = (year, monthIndex) => {
