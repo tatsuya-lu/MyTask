@@ -1,6 +1,6 @@
 <template>
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-2xl font-bold mb-6">
+        <h1 v-if="!isModal" class="text-2xl font-bold mb-6">
             {{ isEditing ? 'タスクの編集' : '新規タスク作成' }}
         </h1>
 
@@ -182,6 +182,10 @@ const props = defineProps({
     isModal: {
         type: Boolean,
         default: false
+    },
+    initialDate: {
+        type: Date,
+        default: null
     }
 })
 
@@ -291,6 +295,9 @@ onMounted(async () => {
                 router.push({ name: 'tasks' })
             }
         }
+    } else if (props.initialDate) {
+        // 新規作成時に日付を設定
+        form.value.due_date = props.initialDate;
     }
 })
 </script>

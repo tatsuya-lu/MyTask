@@ -39,19 +39,33 @@
 
                 <!-- カレンダー本体 -->
                 <div class="grid grid-cols-7 gap-2">
-                    <div v-for="date in monthDates" :key="date.toISOString()" class="min-h-[120px] border p-2 relative"
-                        :class="{
+                    <div v-for="date in monthDates" :key="date.toISOString()"
+                        class="min-h-[120px] border p-2 relative group" :class="{
                             'bg-gray-50': !isCurrentMonth(date),
                             'bg-blue-50': isToday(date)
                         }">
-                        <div class="text-right mb-2" :class="{ 'text-gray-400': !isCurrentMonth(date) }">
-                            {{ date.getDate() }}
+                        <div class="flex justify-between items-start mb-2">
+                            <div :class="{ 'text-gray-400': !isCurrentMonth(date) }">
+                                {{ date.getDate() }}
+                            </div>
+                            <!-- 追加ボタン -->
+                            <button @click="openCreateTaskModal(date)"
+                                class="invisible group-hover:visible p-1 hover:bg-gray-100 rounded-full"
+                                :class="{ 'text-gray-400': !isCurrentMonth(date) }">
+                                <i class="fas fa-plus"></i>
+                            </button>
                         </div>
                         <div class="space-y-1 max-h-[80px] overflow-y-auto">
-                            <div v-for="task in getTasksForDate(date)" :key="task.id" @click="openTaskModal(task.id)"
-                                class="text-sm p-1 rounded cursor-pointer hover:bg-opacity-80"
+                            <div v-for="task in getTasksForDate(date)" :key="task.id"
+                                class="text-sm p-1 rounded group flex justify-between items-center"
                                 :class="getTaskPriorityClass(task)">
-                                {{ task.title }}
+                                <span @click="openTaskModal(task.id)" class="cursor-pointer flex-grow">
+                                    {{ task.title }}
+                                </span>
+                                <button @click.stop="confirmDeleteTask(task)"
+                                    class="invisible group-hover:visible text-gray-500 hover:text-red-500 px-1">
+                                    <i class="fas fa-minus"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -117,18 +131,34 @@
             </div>
         </div>
 
-        <!-- タスク編集モーダル -->
+        <!-- 削除確認モーダル -->
+        <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 max-w-md w-full">
+                <h3 class="text-lg font-semibold mb-4">タスクの削除</h3>
+                <p class="mb-6">「{{ taskToDelete?.title }}」を削除してもよろしいですか？</p>
+                <div class="flex justify-end space-x-4">
+                    <button @click="cancelDelete" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded">
+                        キャンセル
+                    </button>
+                    <button @click="executeDelete" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded">
+                        削除
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- タスク編集/作成モーダル -->
         <div v-if="showTaskModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div class="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                 <div class="p-4 border-b flex justify-between items-center">
-                    <h2 class="text-xl font-bold">タスクの編集</h2>
+                    <h2 class="text-xl font-bold">{{ modalTitle }}</h2>
                     <button @click="closeTaskModal" class="text-gray-500 hover:text-gray-700">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 <div class="p-4">
-                    <TaskForm v-if="selectedTaskId" :task-id="selectedTaskId" :is-modal="true" @saved="handleTaskSaved"
-                        @cancelled="closeTaskModal" />
+                    <TaskForm v-if="showTaskModal" :task-id="selectedTaskId" :initial-date="selectedDate"
+                        :is-modal="true" @saved="handleTaskSaved" @cancelled="closeTaskModal" />
                 </div>
             </div>
         </div>
@@ -152,7 +182,43 @@ const showTaskModal = ref(false)
 const selectedTaskId = ref(null)
 const taskStore = useTaskStore()
 
-// 月間ビューの日付生成
+const showDeleteModal = ref(false)
+const taskToDelete = ref(null)
+
+const confirmDeleteTask = (task) => {
+    taskToDelete.value = task
+    showDeleteModal.value = true
+}
+
+const cancelDelete = () => {
+    showDeleteModal.value = false
+    taskToDelete.value = null
+}
+
+const executeDelete = async () => {
+    try {
+        await taskStore.deleteTask(taskToDelete.value.id)
+        await loadTasks()
+    } catch (error) {
+        console.error('タスクの削除に失敗しました:', error)
+    } finally {
+        showDeleteModal.value = false
+        taskToDelete.value = null
+    }
+}
+
+const selectedDate = ref(null)
+
+const openCreateTaskModal = (date) => {
+    selectedDate.value = date
+    selectedTaskId.value = null
+    showTaskModal.value = true
+}
+
+const modalTitle = computed(() => {
+    return selectedTaskId.value ? 'タスクの編集' : '新規タスク作成'
+})
+
 const monthDates = computed(() => {
     const dates = []
     const year = currentDate.value.getFullYear()
