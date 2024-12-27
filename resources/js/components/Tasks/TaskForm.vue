@@ -147,7 +147,14 @@ const router = useRouter();
 const taskStore = useTaskStore();
 const tagStore = useTagStore();
 
-const isEditing = computed(() => !!route.params.id);
+const isEditing = computed(() => {
+    // モーダルの場合は props.taskId を使用
+    if (props.isModal) {
+        return !!props.taskId;
+    }
+    // 通常モードの場合は route.params.id を使用
+    return !!route.params.id;
+});
 const isLoading = ref(false);
 const errors = ref({});
 
@@ -187,7 +194,7 @@ const props = defineProps({
         type: Date,
         default: null
     }
-})
+});
 
 const emit = defineEmits(['saved', 'cancelled'])
 
@@ -270,17 +277,19 @@ const handleCancel = () => {
 
 onMounted(async () => {
     try {
-        await tagStore.fetchTags()
+        await tagStore.fetchTags();
     } catch (error) {
-        console.error('タグの取得に失敗しました:', error)
+        console.error('タグの取得に失敗しました:', error);
     }
 
-    if (props.taskId) {
-        try {
-            const response = await axios.get(`/api/tasks/${props.taskId}`)
-            const task = response.data.data
+    const targetTaskId = props.isModal ? props.taskId : route.params.id;
 
-            const dueDate = task.due_date ? new Date(task.due_date + 'T00:00:00') : null
+    if (targetTaskId) {
+        try {
+            const response = await axios.get(`/api/tasks/${targetTaskId}`);
+            const task = response.data.data;
+
+            const dueDate = task.due_date ? new Date(task.due_date + 'T00:00:00') : null;
 
             form.value = {
                 ...task,
@@ -289,17 +298,16 @@ onMounted(async () => {
                 priority: task.priority || 'low',
                 status: task.status || 'not_started',
                 tags: task.tags ? task.tags.map(tag => tag.id) : []
-            }
+            };
         } catch (error) {
-            console.error('タスクの取得に失敗しました:', error)
+            console.error('タスクの取得に失敗しました:', error);
             if (!props.isModal) {
-                router.push({ name: 'tasks' })
+                router.push({ name: 'tasks' });
             }
         }
     } else if (props.initialDate) {
-        // 新規作成時の日付設定を修正
-        const localDate = new Date(props.initialDate)
-        form.value.due_date = localDate
+        const localDate = new Date(props.initialDate);
+        form.value.due_date = localDate;
     }
-})
+});
 </script>
