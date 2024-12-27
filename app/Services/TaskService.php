@@ -12,6 +12,12 @@ class TaskService
     {
         $data['user_id'] = Auth::id();
 
+        if (isset($data['due_date'])) {
+            $data['due_date'] = Carbon::parse($data['due_date'])
+                ->startOfDay()
+                ->format('Y-m-d');
+        }
+
         $tags = $data['tags'] ?? [];
         unset($data['tags']);
 
@@ -27,7 +33,9 @@ class TaskService
     public function updateTask(Task $task, array $data)
     {
         if (isset($data['due_date'])) {
-            $data['due_date'] = \Carbon\Carbon::parse($data['due_date'])->format('Y-m-d');
+            $data['due_date'] = Carbon::parse($data['due_date'])
+                ->startOfDay()
+                ->format('Y-m-d');
         }
 
         $tags = $data['tags'] ?? [];
@@ -47,15 +55,15 @@ class TaskService
         $query = Task::with(['tags'])
             ->where('user_id', auth()->id());
 
-        // 日付範囲でのフィルタリング
         if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
-            $query->whereBetween('due_date', [
-                Carbon::parse($filters['start_date'])->startOfDay(),
-                Carbon::parse($filters['end_date'])->endOfDay()
-            ]);
-        }
+            $startDate = Carbon::parse($filters['start_date'])->startOfDay();
+            $endDate = Carbon::parse($filters['end_date'])->endOfDay();
 
-        elseif (!empty($filters['year'])) {
+            $query->whereBetween('due_date', [
+                $startDate->format('Y-m-d'),
+                $endDate->format('Y-m-d')
+            ]);
+        } elseif (!empty($filters['year'])) {
             $query->whereYear('due_date', $filters['year']);
         }
 

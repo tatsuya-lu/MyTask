@@ -219,9 +219,8 @@ const handleSubmit = async () => {
     try {
         const submitData = { ...form.value }
         if (submitData.due_date) {
-            submitData.due_date = submitData.due_date instanceof Date
-                ? submitData.due_date.toISOString().split('T')[0]
-                : submitData.due_date
+            const localDate = new Date(submitData.due_date)
+            submitData.due_date = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`
         }
 
         await axios.get('/sanctum/csrf-cookie')
@@ -281,10 +280,12 @@ onMounted(async () => {
             const response = await axios.get(`/api/tasks/${props.taskId}`)
             const task = response.data.data
 
+            const dueDate = task.due_date ? new Date(task.due_date + 'T00:00:00') : null
+
             form.value = {
                 ...task,
                 progress: Number(task.progress || 0),
-                due_date: task.due_date ? parseDate(task.due_date) : null,
+                due_date: dueDate,
                 priority: task.priority || 'low',
                 status: task.status || 'not_started',
                 tags: task.tags ? task.tags.map(tag => tag.id) : []
@@ -296,8 +297,9 @@ onMounted(async () => {
             }
         }
     } else if (props.initialDate) {
-        // 新規作成時に日付を設定
-        form.value.due_date = props.initialDate;
+        // 新規作成時の日付設定を修正
+        const localDate = new Date(props.initialDate)
+        form.value.due_date = localDate
     }
 })
 </script>
