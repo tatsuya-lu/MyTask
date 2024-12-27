@@ -166,7 +166,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useTaskStore } from '@/stores/task'
 import TaskForm from './TaskForm.vue'
 
@@ -344,13 +344,55 @@ const getTaskPriorityClass = (task) => ({
 
 // タスクの読み込み
 const loadTasks = async () => {
+    // 表示している月の前後1ヶ月分も含めて取得
+    const displayDate = currentDate.value
+    const startDate = new Date(displayDate.getFullYear(), displayDate.getMonth() - 1, 1)
+    const endDate = new Date(displayDate.getFullYear(), displayDate.getMonth() + 2, 0)
+
     const filters = {
-        year: currentYear.value
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0]
+    }
+
+    await taskStore.fetchTasks(filters)
+}
+
+const loadYearTasks = async () => {
+    const filters = {
+        start_date: `${currentYear.value}-01-01`,
+        end_date: `${currentYear.value}-12-31`
     }
     await taskStore.fetchTasks(filters)
 }
 
+// 表示切り替え時の処理を追加
+watch(currentView, async (newView) => {
+    if (newView === 'month') {
+        await loadTasks()
+    } else {
+        await loadYearTasks()
+    }
+})
+
+// 月変更時の処理
+watch(currentDate, async () => {
+    if (currentView.value === 'month') {
+        await loadTasks()
+    }
+})
+
+// 年変更時の処理
+watch(currentYear, async () => {
+    if (currentView.value === 'year') {
+        await loadYearTasks()
+    }
+})
+
 onMounted(() => {
-    loadTasks()
+    if (currentView.value === 'month') {
+        loadTasks()
+    } else {
+        loadYearTasks()
+    }
 })
 </script>

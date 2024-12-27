@@ -24,10 +24,18 @@ class TaskController extends Controller
             'priority',
             'team_id',
             'is_archived',
-            'tag_ids'
+            'tag_ids',
+            'start_date',
+            'end_date',
+            'year'
         ]);
 
         $query = $this->taskService->getFilteredTasks($filters);
+
+        // カレンダー表示の場合はページネーションを無効化
+        if ($request->has('start_date') && $request->has('end_date')) {
+            return TaskResource::collection($query->get());
+        }
 
         $perPage = $request->input('per_page', 10);
         return TaskResource::collection($query->paginate($perPage));
