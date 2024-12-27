@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class TaskService
 {
@@ -46,7 +47,15 @@ class TaskService
         $query = Task::with(['tags'])
             ->where('user_id', auth()->id());
 
-        if (!empty($filters['year'])) {
+        // 日付範囲でのフィルタリング
+        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+            $query->whereBetween('due_date', [
+                Carbon::parse($filters['start_date'])->startOfDay(),
+                Carbon::parse($filters['end_date'])->endOfDay()
+            ]);
+        }
+
+        elseif (!empty($filters['year'])) {
             $query->whereYear('due_date', $filters['year']);
         }
 
@@ -66,6 +75,10 @@ class TaskService
 
         if (isset($filters['is_archived'])) {
             $query->where('is_archived', $filters['is_archived']);
+        }
+
+        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+            return $query->orderBy('due_date', 'asc');
         }
 
         return $query->orderBy('created_at', 'desc');
