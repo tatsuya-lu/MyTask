@@ -11,12 +11,13 @@ export const useTaskStore = defineStore('task', {
             priority: '',
             tagId: '',
             searchQuery: ''
-        }
+        },
+        isCustomOrder: false
     }),
 
     getters: {
         filteredTasks: (state) => {
-            return state.tasks.filter(task => {
+            let filtered = state.tasks.filter(task => {
                 const matchesStatus = !state.filters.status || task.status === state.filters.status;
                 const matchesPriority = !state.filters.priority || task.priority === state.filters.priority;
                 const matchesTag = !state.filters.tagId || task.tags.some(tag => tag.id === parseInt(state.filters.tagId));
@@ -26,6 +27,12 @@ export const useTaskStore = defineStore('task', {
 
                 return matchesStatus && matchesPriority && matchesTag && matchesSearch;
             });
+            // カスタム並び順が有効な場合はsort_orderでソート
+            if (state.isCustomOrder) {
+                filtered.sort((a, b) => a.sort_order - b.sort_order);
+            }
+
+            return filtered;
         }
     },
 
@@ -104,6 +111,53 @@ export const useTaskStore = defineStore('task', {
                 throw error;
             } finally {
                 this.isLoading = false;
+            }
+        },
+
+        async updateTaskOrder(newOrder) {
+            this.isLoading = true;
+            try {
+                const taskIds = newOrder.map(task => task.id);
+                const response = await axios.put('/api/tasks/order', {
+                    taskOrder: taskIds,
+                    isCustomOrder: true
+                });
+                this.isCustomOrder = true;
+                this.tasks = newOrder;
+                return response.data;
+            } catch (error) {
+                this.error = error.response?.data?.message || 'タスクの並び順の更新に失敗しました';
+                throw error;
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        async applySort(sortType) {
+            if (this.isCustomOrder) {
+                const result = confirm('現在の並び順を保存しますか？キャンセルを押した場合現在の並び順は削除されます。');
+
+                if (result) {
+                    return;
+                }
+            }
+
+            // 並び順をリセットしてソートを適用
+            this.isCustomOrder = false;
+            await axios.put('/api/tasks/order', {
+                taskOrder: [],
+                isCustomOrder: false
+            });
+
+            // ソート処理の実行
+            switch (sortType) {
+                case 'created_desc':
+                    this.tasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    break;
+                case 'due_date':
+                    this.tasks.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+                    break;
+                // 他のソートケースを追加...
             }
         }
     }

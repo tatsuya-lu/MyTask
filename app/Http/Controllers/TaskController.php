@@ -98,4 +98,23 @@ class TaskController extends Controller
         $this->taskService->deleteTask($task);
         return response()->json(null, 204);
     }
+
+    public function updateOrder(Request $request)
+    {
+        $validated = $request->validate([
+            'taskOrder' => 'required|array',
+            'taskOrder.*' => 'integer|exists:tasks,id',
+            'isCustomOrder' => 'required|boolean'
+        ]);
+
+        $result = $this->taskService->updateTaskOrder(
+            $validated['taskOrder'],
+            $validated['isCustomOrder']
+        );
+
+        return response()->json([
+            'message' => 'タスクの並び順を更新しました',
+            'data' => $result
+        ]);
+    }
 }

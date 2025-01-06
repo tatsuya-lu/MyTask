@@ -85,4 +85,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Tag::class);
     }
+
+    public function taskOrder()
+    {
+        return $this->hasOne(UserTaskOrder::class);
+    }
+
+    public function getCustomTaskOrder()
+    {
+        return $this->taskOrder()->where('is_custom_order', true)->first();
+    }
 }

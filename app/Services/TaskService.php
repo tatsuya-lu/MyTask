@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Task;
+use App\Models\UserTaskOrder;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class TaskService
 {
@@ -89,7 +91,48 @@ class TaskService
             return $query->orderBy('due_date', 'asc');
         }
 
+        $userOrder = UserTaskOrder::where('user_id', auth()->id())
+            ->where('is_custom_order', true)
+            ->first();
+
+        if ($userOrder && !empty($userOrder->task_order) && empty($filters['start_date']) && empty($filters['end_date'])) {
+            // CASEステートメントを構築
+            $cases = [];
+            foreach ($userOrder->task_order as $index => $id) {
+                $cases[] = "WHEN id = {$id} THEN {$index}";
+            }
+
+            if (!empty($cases)) {
+                $orderByCase = "CASE " . implode(' ', $cases) . " ELSE " . count($userOrder->task_order) . " END";
+                return $query->orderByRaw($orderByCase);
+            }
+        }
+
+        // デフォルトの並び順
         return $query->orderBy('created_at', 'desc');
+    }
+
+    public function updateTaskOrder(array $taskOrder, bool $isCustomOrder)
+    {
+        $userId = auth()->id();
+
+        return DB::transaction(function () use ($userId, $taskOrder, $isCustomOrder) {
+            $orderSetting = UserTaskOrder::updateOrCreate(
+                ['user_id' => $userId],
+                [
+                    'task_order' => $taskOrder,
+                    'is_custom_order' => $isCustomOrder
+                ]
+            );
+
+            foreach ($taskOrder as $index => $taskId) {
+                Task::where('id', $taskId)
+                    ->where('user_id', $userId)
+                    ->update(['sort_order' => $index]);
+            }
+
+            return $orderSetting;
+        });
     }
 
     public function deleteTask(Task $task)

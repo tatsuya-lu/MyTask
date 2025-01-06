@@ -20,13 +20,15 @@ class Task extends Model
         'status',
         'progress',
         'due_date',
-        'is_archived'
+        'is_archived',
+        'sort_order'
     ];
 
     protected $casts = [
         'due_date' => 'date',
         'status' => TaskStatus::class,
-        'priority' => TaskPriority::class
+        'priority' => TaskPriority::class,
+        'sort_order' => 'integer'
     ];
 
     public function user()
@@ -38,5 +40,20 @@ class Task extends Model
     {
         return $this->belongsToMany(Tag::class, 'tag_task')
             ->withTimestamps();
+    }
+
+    public function scopeCustomOrder($query, $userId)
+    {
+        $userOrder = UserTaskOrder::where('user_id', $userId)
+            ->where('is_custom_order', true)
+            ->first();
+
+        if ($userOrder) {
+            return $query->orderByRaw(
+                'FIELD(id,' . implode(',', $userOrder->task_order) . ')'
+            );
+        }
+
+        return $query->orderBy('sort_order');
     }
 }
