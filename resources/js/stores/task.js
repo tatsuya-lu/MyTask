@@ -27,7 +27,7 @@ export const useTaskStore = defineStore('task', {
 
                 return matchesStatus && matchesPriority && matchesTag && matchesSearch;
             });
-            // カスタム並び順が有効な場合はsort_orderでソート
+
             if (state.isCustomOrder) {
                 filtered.sort((a, b) => a.sort_order - b.sort_order);
             }
@@ -55,11 +55,12 @@ export const useTaskStore = defineStore('task', {
             try {
                 const queryParams = new URLSearchParams(filters).toString();
                 const response = await axios.get(`/api/tasks?${queryParams}`);
-                console.log('タスクレスポンス:', response.data);  // レスポンスの中身を確認
                 this.tasks = response.data.data.map(task => ({
                     ...task,
                     tags: task.tags || []
                 }));
+                // レスポンスからカスタム並び順の状態を設定
+                this.isCustomOrder = response.data.isCustomOrder || false;
             } catch (error) {
                 this.error = error.response?.data?.message || 'タスクの取得に失敗しました';
                 throw error;
@@ -122,8 +123,13 @@ export const useTaskStore = defineStore('task', {
                     taskOrder: taskIds,
                     isCustomOrder: true
                 });
+
+                // 成功したら状態を更新
+                this.tasks = newOrder.map((task, index) => ({
+                    ...task,
+                    sort_order: index
+                }));
                 this.isCustomOrder = true;
-                this.tasks = newOrder;
                 return response.data;
             } catch (error) {
                 this.error = error.response?.data?.message || 'タスクの並び順の更新に失敗しました';
@@ -142,22 +148,33 @@ export const useTaskStore = defineStore('task', {
                 }
             }
 
-            // 並び順をリセットしてソートを適用
-            this.isCustomOrder = false;
-            await axios.put('/api/tasks/order', {
-                taskOrder: [],
-                isCustomOrder: false
-            });
-
-            // ソート処理の実行
+            // ソートを適用
+            const sortedTasks = [...this.tasks];
             switch (sortType) {
                 case 'created_desc':
-                    this.tasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    sortedTasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                     break;
                 case 'due_date':
-                    this.tasks.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+                    sortedTasks.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
                     break;
-                // 他のソートケースを追加...
+            }
+
+            // ソートされた順序でタスクIDの配列を作成
+            const taskIds = sortedTasks.map(task => task.id);
+
+            try {
+                // サーバーに新しい順序を送信
+                await axios.put('/api/tasks/order', {
+                    taskOrder: taskIds,
+                    isCustomOrder: false
+                });
+
+                // 状態を更新
+                this.tasks = sortedTasks;
+                this.isCustomOrder = false;
+            } catch (error) {
+                this.error = error.response?.data?.message || 'ソートの適用に失敗しました';
+                throw error;
             }
         }
     }

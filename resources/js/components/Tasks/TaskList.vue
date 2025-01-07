@@ -81,40 +81,38 @@
             タスクが見つかりません
         </div>
 
-        <draggable v-else v-model="draggedTasks" class="grid gap-4" @end="handleDragEnd" :animation="200"
-            ghost-class="ghost" drag-class="drag">
+        <draggable v-model="draggedTasks" class="grid gap-4" @end="handleDragEnd" :animation="200" ghost-class="ghost"
+            drag-class="drag" :disabled="false" item-key="id" :force-fallback="true" handle=".drag-handle">
             <template #item="{ element: task }">
-                <div class="bg-white p-4 rounded shadow cursor-move">
-                    <!-- 既存のタスク表示内容 -->
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="font-semibold">{{ task.title }}</h3>
-                            <p class="text-gray-600 text-sm mt-1">{{ task.description }}</p>
-                            <!-- タグの表示 -->
-                            <div class="mt-2 flex flex-wrap gap-1">
-                                <span v-for="tag in task.tags" :key="tag.id" class="px-2 py-1 rounded text-sm" :style="{
-                                    backgroundColor: tag.color + '20',
-                                    color: tag.color,
-                                    borderColor: tag.color,
-                                    borderWidth: '1px'
-                                }">
-                                    {{ tag.name }}
-                                </span>
+                <div class="bg-white p-4 rounded shadow">
+                    <div class="drag-handle">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-semibold">{{ task.title }}</h3>
+                                <p class="text-gray-600 text-sm mt-1">{{ task.description }}</p>
+                                <!-- タグの表示 -->
+                                <div class="mt-2 flex flex-wrap gap-1">
+                                    <span v-for="tag in task.tags" :key="tag.id" class="px-2 py-1 rounded text-sm"
+                                        :style="{
+                                            backgroundColor: tag.color + '20',
+                                            color: tag.color,
+                                            borderColor: tag.color,
+                                            borderWidth: '1px'
+                                        }">
+                                        {{ tag.name }}
+                                    </span>
+                                </div>
                             </div>
-                            <!-- ステータスと優先度 -->
-                            <div class="mt-2 flex gap-2">
-                                <!-- 既存のステータスと優先度表示 -->
+                            <!-- 操作ボタン -->
+                            <div class="flex gap-2">
+                                <router-link :to="{ name: 'task-edit', params: { id: task.id } }"
+                                    class="text-blue-500 hover:text-blue-700">
+                                    編集
+                                </router-link>
+                                <button @click.stop="deleteTask(task.id)" class="text-red-500 hover:text-red-700">
+                                    削除
+                                </button>
                             </div>
-                        </div>
-                        <!-- 操作ボタン -->
-                        <div class="flex gap-2">
-                            <router-link :to="{ name: 'task-edit', params: { id: task.id } }"
-                                class="text-blue-500 hover:text-blue-700">
-                                編集
-                            </router-link>
-                            <button @click.stop="deleteTask(task.id)" class="text-red-500 hover:text-red-700">
-                                削除
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -142,18 +140,21 @@ const filteredTasks = computed(() => taskStore.filteredTasks);
 const draggedTasks = computed({
     get: () => filteredTasks.value,
     set: (value) => {
-        // Do nothing here, we'll handle the update in handleDragEnd
+        // handleDragEndで処理するため、ここでは何もしない
     }
 });
 
 const sortType = ref('');
 
 // ドラッグ&ドロップ終了時の処理
-const handleDragEnd = async ({ oldIndex, newIndex }) => {
-    if (oldIndex === newIndex) return;
+const handleDragEnd = async (event) => {
+    if (event.oldIndex === event.newIndex) return;
 
-    const newOrder = [...draggedTasks.value];
     try {
+        const newOrder = [...draggedTasks.value];
+        const movedItem = newOrder.splice(event.oldIndex, 1)[0];
+        newOrder.splice(event.newIndex, 0, movedItem);
+
         await taskStore.updateTaskOrder(newOrder);
     } catch (error) {
         console.error('並び順の更新に失敗:', error);
@@ -210,5 +211,12 @@ const deleteTask = async (taskId) => {
 
 .drag {
     opacity: 0.9;
+}
+
+.drag-handle {
+    cursor: move;
+    touch-action: none;
+    width: 100%;
+    height: 100%;
 }
 </style>
