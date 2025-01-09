@@ -120,16 +120,15 @@ export const useTaskStore = defineStore('task', {
         async updateTaskOrder(newOrder) {
             this.isLoading = true;
             try {
-                const taskIds = newOrder.map(task => task.id);
+                const taskIds = Array.isArray(newOrder) ? newOrder : newOrder.map(task => task.id);
                 const response = await axios.put('/api/tasks/order', {
                     taskOrder: taskIds,
                     isCustomOrder: true
                 });
 
-                // 成功したら状態を更新
-                this.tasks = newOrder.map((task, index) => ({
+                this.tasks = this.tasks.map((task, index) => ({
                     ...task,
-                    sort_order: index
+                    sort_order: taskIds.indexOf(task.id)
                 }));
                 this.isCustomOrder = true;
                 return response.data;
@@ -172,17 +171,21 @@ export const useTaskStore = defineStore('task', {
         async applySavedOrder(order) {
             try {
                 const orderedTasks = [];
-                for (const taskId of order.task_order) {
+                const taskIds = order.task_order;
+
+                // タスクの並び順を再構築
+                for (const taskId of taskIds) {
                     const task = this.tasks.find(t => t.id === taskId);
                     if (task) orderedTasks.push(task);
                 }
 
+                // 先にサーバー側の更新を実行
+                await this.updateTaskOrder(taskIds);
+
+                // 成功したら、ローカルの状態を更新
                 this.tasks = orderedTasks;
                 this.isCustomOrder = true;
                 this.currentOrderId = order.id;
-
-                // サーバー側にも反映
-                await this.updateTaskOrder(orderedTasks);
             } catch (error) {
                 this.error = error.response?.data?.message || '並び順の適用に失敗しました';
                 throw error;
@@ -217,7 +220,8 @@ export const useTaskStore = defineStore('task', {
 
         // 既存のapplySortメソッドを修正
         async applySort(sortType) {
-            if (this.isCustomOrder) {
+            // カスタム並び順が適用されている場合のみ保存確認を表示
+            if (this.isCustomOrder && this.currentOrderId !== null) {
                 const result = confirm('現在の並び順を保存しますか？');
 
                 if (result) {
@@ -231,13 +235,12 @@ export const useTaskStore = defineStore('task', {
                             description || null
                         );
                     } catch (error) {
-                        if (error.response?.status !== 422) { // バリデーションエラー以外
-                            return; // 保存に失敗したら並び順の変更も中止
+                        if (error.response?.status !== 422) {
+                            return;
                         }
                     }
                 }
             }
-
 
             const sortedTasks = [...this.tasks];
             switch (sortType) {
@@ -245,12 +248,19 @@ export const useTaskStore = defineStore('task', {
                     sortedTasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                     break;
                 case 'due_date':
-                    sortedTasks.sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+                    sortedTasks.sort((a, b) => {
+                        if (!a.due_date) return 1;
+                        if (!b.due_date) return -1;
+                        return new Date(a.due_date) - new Date(b.due_date);
+                    });
                     break;
             }
 
             try {
-                await this.updateTaskOrder(sortedTasks.map(task => task.id), false);
+                const taskIds = sortedTasks.map(task => task.id);
+                await this.updateTaskOrder(taskIds);
+
+                // 成功したら状態を更新
                 this.tasks = sortedTasks;
                 this.isCustomOrder = false;
                 this.currentOrderId = null;
