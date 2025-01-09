@@ -139,4 +139,43 @@ class TaskService
     {
         return $task->delete();
     }
+
+    public function saveTaskOrder(array $taskOrder, bool $isCustomOrder, ?string $name = null, ?string $description = null)
+    {
+        $userId = auth()->id();
+
+        if (UserTaskOrder::hasReachedLimit($userId)) {
+            throw new \Exception('保存できる並び順は10個までです。');
+        }
+
+        return UserTaskOrder::create([
+            'user_id' => $userId,
+            'name' => $name,
+            'description' => $description,
+            'task_order' => $taskOrder,
+            'is_custom_order' => $isCustomOrder
+        ]);
+    }
+
+    public function getSavedTaskOrders()
+    {
+        return UserTaskOrder::where('user_id', auth()->id())
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    public function updateSavedTaskOrder($orderId, array $data)
+    {
+        $order = UserTaskOrder::where('user_id', auth()->id())
+            ->findOrFail($orderId);
+
+        return $order->update($data);
+    }
+
+    public function deleteSavedTaskOrder($orderId)
+    {
+        return UserTaskOrder::where('user_id', auth()->id())
+            ->findOrFail($orderId)
+            ->delete();
+    }
 }

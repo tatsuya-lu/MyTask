@@ -33,7 +33,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('tasks')->group(function () {
         Route::get('/', [TaskController::class, 'index'])->name('tasks.index');
         Route::post('/', [TaskController::class, 'store'])->name('tasks.store');
+
         Route::put('/order', [TaskController::class, 'updateOrder'])->name('tasks.updateOrder');
+        Route::get('/orders', [TaskController::class, 'getSavedOrders']);
+        Route::post('/orders', [TaskController::class, 'saveOrder']);
+        Route::put('/orders/{order}', [TaskController::class, 'updateSavedOrder']);
+        Route::delete('/orders/{order}', [TaskController::class, 'deleteSavedOrder']);
+
         Route::get('/{task}', [TaskController::class, 'show'])->name('tasks.show');
         Route::put('/{task}', [TaskController::class, 'update'])->name('tasks.update');
         Route::delete('/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');

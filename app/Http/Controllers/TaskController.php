@@ -117,4 +117,54 @@ class TaskController extends Controller
             'data' => $result
         ]);
     }
+
+    public function getSavedOrders()
+    {
+        $orders = $this->taskService->getSavedTaskOrders();
+        return response()->json($orders);
+    }
+
+    public function saveOrder(Request $request)
+    {
+        $validated = $request->validate([
+            'taskOrder' => 'required|array',
+            'taskOrder.*' => 'integer|exists:tasks,id',
+            'name' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'isCustomOrder' => 'required|boolean'
+        ]);
+
+        try {
+            $order = $this->taskService->saveTaskOrder(
+                $validated['taskOrder'],
+                $validated['isCustomOrder'],
+                $validated['name'] ?? null,
+                $validated['description'] ?? null
+            );
+
+            return response()->json([
+                'message' => '並び順を保存しました',
+                'data' => $order
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+    }
+
+    public function updateSavedOrder(Request $request, $orderId)
+    {
+        $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'description' => 'nullable|string'
+        ]);
+
+        $order = $this->taskService->updateSavedTaskOrder($orderId, $validated);
+        return response()->json(['message' => '並び順を更新しました']);
+    }
+
+    public function deleteSavedOrder($orderId)
+    {
+        $this->taskService->deleteSavedTaskOrder($orderId);
+        return response()->json(['message' => '並び順を削除しました']);
+    }
 }

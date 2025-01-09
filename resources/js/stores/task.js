@@ -12,7 +12,9 @@ export const useTaskStore = defineStore('task', {
             tagId: '',
             searchQuery: ''
         },
-        isCustomOrder: false
+        isCustomOrder: false,
+        savedOrders: [],
+        currentOrderId: null
     }),
 
     getters: {
@@ -139,16 +141,104 @@ export const useTaskStore = defineStore('task', {
             }
         },
 
+        async fetchSavedOrders() {
+            try {
+                const response = await axios.get('/api/tasks/orders');
+                this.savedOrders = response.data;
+            } catch (error) {
+                this.error = error.response?.data?.message || '保存済みの並び順の取得に失敗しました';
+                throw error;
+            }
+        },
+
+        // 並び順の保存
+        async saveTaskOrder(taskIds, name = null, description = null) {
+            try {
+                const response = await axios.post('/api/tasks/orders', {
+                    taskOrder: taskIds,
+                    isCustomOrder: true,
+                    name,
+                    description
+                });
+                await this.fetchSavedOrders(); // 一覧を更新
+                return response.data;
+            } catch (error) {
+                this.error = error.response?.data?.message || '並び順の保存に失敗しました';
+                throw error;
+            }
+        },
+
+        // 保存済み並び順の適用
+        async applySavedOrder(order) {
+            try {
+                const orderedTasks = [];
+                for (const taskId of order.task_order) {
+                    const task = this.tasks.find(t => t.id === taskId);
+                    if (task) orderedTasks.push(task);
+                }
+
+                this.tasks = orderedTasks;
+                this.isCustomOrder = true;
+                this.currentOrderId = order.id;
+
+                // サーバー側にも反映
+                await this.updateTaskOrder(orderedTasks);
+            } catch (error) {
+                this.error = error.response?.data?.message || '並び順の適用に失敗しました';
+                throw error;
+            }
+        },
+
+        // 保存済み並び順の更新
+        async updateSavedOrder(orderId, data) {
+            try {
+                await axios.put(`/api/tasks/orders/${orderId}`, data);
+                await this.fetchSavedOrders(); // 一覧を更新
+            } catch (error) {
+                this.error = error.response?.data?.message || '並び順の更新に失敗しました';
+                throw error;
+            }
+        },
+
+        // 保存済み並び順の削除
+        async deleteSavedOrder(orderId) {
+            try {
+                await axios.delete(`/api/tasks/orders/${orderId}`);
+                await this.fetchSavedOrders(); // 一覧を更新
+                if (this.currentOrderId === orderId) {
+                    this.currentOrderId = null;
+                    this.isCustomOrder = false;
+                }
+            } catch (error) {
+                this.error = error.response?.data?.message || '並び順の削除に失敗しました';
+                throw error;
+            }
+        },
+
+        // 既存のapplySortメソッドを修正
         async applySort(sortType) {
             if (this.isCustomOrder) {
-                const result = confirm('現在の並び順を保存しますか？キャンセルを押した場合現在の並び順は削除されます。');
+                const result = confirm('現在の並び順を保存しますか？');
 
                 if (result) {
-                    return;
+                    const name = prompt('並び順の名前を入力してください（省略可）:');
+                    const description = prompt('説明を入力してください（省略可）:');
+
+                    try {
+                        await this.saveTaskOrder(
+                            this.tasks.map(task => task.id),
+                            name || null,
+                            description || null
+                        );
+                    } catch (error) {
+                        if (error.response?.status !== 422) { // バリデーションエラー以外
+                            return; // 保存に失敗したら並び順の変更も中止
+                        }
+                    }
                 }
             }
 
-            // ソートを適用
+
             const sortedTasks = [...this.tasks];
             switch (sortType) {
                 case 'created_desc':
@@ -159,19 +249,11 @@ export const useTaskStore = defineStore('task', {
                     break;
             }
 
-            // ソートされた順序でタスクIDの配列を作成
-            const taskIds = sortedTasks.map(task => task.id);
-
             try {
-                // サーバーに新しい順序を送信
-                await axios.put('/api/tasks/order', {
-                    taskOrder: taskIds,
-                    isCustomOrder: false
-                });
-
-                // 状態を更新
+                await this.updateTaskOrder(sortedTasks.map(task => task.id), false);
                 this.tasks = sortedTasks;
                 this.isCustomOrder = false;
+                this.currentOrderId = null;
             } catch (error) {
                 this.error = error.response?.data?.message || 'ソートの適用に失敗しました';
                 throw error;

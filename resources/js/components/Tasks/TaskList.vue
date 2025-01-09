@@ -4,12 +4,29 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold">タスク一覧</h1>
             <div class="flex gap-2">
+                <!-- 保存済み並び順の選択 -->
+                <select v-model="selectedOrderId" @change="handleSavedOrderSelect"
+                    class="border rounded-md py-2 px-3 text-gray-700">
+                    <option value="">保存済みの並び順</option>
+                    <option v-for="order in taskStore.savedOrders" :key="order.id" :value="order.id">
+                        {{ order.name || order.created_at }}
+                        {{ order.description ? `(${order.description})` : '' }}
+                    </option>
+                </select>
+
+                <!-- 既存のソート選択 -->
                 <select v-model="sortType" @change="handleSort" class="border rounded-md py-2 px-3 text-gray-700">
                     <option value="">並び順を選択</option>
                     <option value="created_desc">作成日（新しい順）</option>
                     <option value="due_date">期限日順</option>
-                    <!-- 他のソートオプション -->
                 </select>
+
+                <!-- 並び順の保存ボタン -->
+                <button v-if="taskStore.isCustomOrder" @click="handleSaveOrder"
+                    class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    現在の並び順を保存
+                </button>
+
                 <router-link :to="{ name: 'task-create' }"
                     class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
                     新規タスク
@@ -144,6 +161,8 @@ const draggedTasks = computed({
     }
 });
 
+const selectedOrderId = ref('');
+
 const sortType = ref('');
 
 // ドラッグ&ドロップ終了時の処理
@@ -185,11 +204,51 @@ const handleFilterChange = () => {
     taskStore.setFilter('tagId', selectedTagId.value);
 };
 
+// 保存済み並び順の選択
+const handleSavedOrderSelect = async () => {
+    if (!selectedOrderId.value) return;
+    
+    const order = taskStore.savedOrders.find(o => o.id === parseInt(selectedOrderId.value));
+    if (order) {
+        try {
+            await taskStore.applySavedOrder(order);
+        } catch (error) {
+            console.error('並び順の適用に失敗:', error);
+        }
+    }
+};
+
+// 現在の並び順を保存
+const handleSaveOrder = async () => {
+    const name = prompt('並び順の名前を入力してください（省略可）:');
+    if (name === null) return; // キャンセル時
+    
+    const description = prompt('説明を入力してください（省略可）:');
+    if (description === null) return; // キャンセル時
+    
+    try {
+        await taskStore.saveTaskOrder(
+            draggedTasks.value.map(task => task.id),
+            name || null,
+            description || null
+        );
+    } catch (error) {
+        console.error('並び順の保存に失敗:', error);
+    }
+};
+
 onMounted(async () => {
     await Promise.all([
         taskStore.fetchTasks(),
+        taskStore.fetchSavedOrders(),
         tagStore.fetchTags()
     ]);
+});
+
+watch(() => taskStore.isCustomOrder, (newValue) => {
+    if (!newValue) {
+        selectedOrderId.value = '';
+    }
 });
 
 const deleteTask = async (taskId) => {
