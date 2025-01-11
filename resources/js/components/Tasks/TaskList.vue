@@ -5,14 +5,49 @@
             <h1 class="text-2xl font-bold">タスク一覧</h1>
             <div class="flex gap-2">
                 <!-- 保存済み並び順の選択 -->
-                <select v-model="selectedOrderId" @change="handleSavedOrderSelect"
+                <!-- <select v-model="selectedOrderId" @change="handleSavedOrderSelect"
                     class="border rounded-md py-2 px-3 text-gray-700">
                     <option value="">保存済みの並び順</option>
                     <option v-for="order in taskStore.savedOrders" :key="order.id" :value="order.id">
                         {{ order.name || order.created_at }}
                         {{ order.description ? `(${order.description})` : '' }}
                     </option>
-                </select>
+                </select> -->
+
+                <!-- 保存済み並び順の選択（カスタムドロップダウン） -->
+                <div class="relative">
+                    <button @click="toggleOrderDropdown"
+                        class="border rounded-md py-2 px-3 text-gray-700 bg-white flex items-center justify-between min-w-[200px]">
+                        <span>{{ selectedOrderName || '保存済みの並び順' }}</span>
+                        <span class="ml-2">▼</span>
+                    </button>
+
+                    <!-- ドロップダウンメニュー -->
+                    <div v-if="isOrderDropdownOpen"
+                        class="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        <div class="py-1">
+                            <div v-if="taskStore.savedOrders.length === 0" class="px-4 py-2 text-gray-500">
+                                保存された並び順はありません
+                            </div>
+                            <div v-else>
+                                <div v-for="order in taskStore.savedOrders" :key="order.id"
+                                    class="flex items-center justify-between px-4 py-2 hover:bg-gray-100">
+                                    <button @click="selectOrder(order)" class="flex-grow text-left">
+                                        {{ order.name || order.created_at }}
+                                        <span v-if="order.description" class="text-sm text-gray-500 block">
+                                            {{ order.description }}
+                                        </span>
+                                    </button>
+                                    <button @click.stop="confirmDeleteOrder(order)"
+                                        class="text-red-500 hover:text-red-700 px-2">
+                                        <span class="sr-only">削除</span>
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- 既存のソート選択 -->
                 <select v-model="sortType" @change="handleSort" class="border rounded-md py-2 px-3 text-gray-700">
@@ -174,7 +209,8 @@ const handleDragEnd = async (event) => {
         const movedItem = newOrder.splice(event.oldIndex, 1)[0];
         newOrder.splice(event.newIndex, 0, movedItem);
 
-        await taskStore.updateTaskOrder(newOrder);
+        const taskIds = newOrder.map(task => task.id);
+        await taskStore.updateTaskOrder(taskIds);
     } catch (error) {
         console.error('並び順の更新に失敗:', error);
     }
@@ -207,7 +243,7 @@ const handleFilterChange = () => {
 // 保存済み並び順の選択
 const handleSavedOrderSelect = async () => {
     if (!selectedOrderId.value) return;
-    
+
     const order = taskStore.savedOrders.find(o => o.id === parseInt(selectedOrderId.value));
     if (order) {
         try {
@@ -222,10 +258,10 @@ const handleSavedOrderSelect = async () => {
 const handleSaveOrder = async () => {
     const name = prompt('並び順の名前を入力してください（省略可）:');
     if (name === null) return; // キャンセル時
-    
+
     const description = prompt('説明を入力してください（省略可）:');
     if (description === null) return; // キャンセル時
-    
+
     try {
         await taskStore.saveTaskOrder(
             draggedTasks.value.map(task => task.id),
@@ -236,6 +272,54 @@ const handleSaveOrder = async () => {
         console.error('並び順の保存に失敗:', error);
     }
 };
+
+const isOrderDropdownOpen = ref(false);
+const selectedOrderName = computed(() => {
+    if (!selectedOrderId.value) return '';
+    const order = taskStore.savedOrders.find(o => o.id === parseInt(selectedOrderId.value));
+    return order ? (order.name || order.created_at) : '';
+});
+
+// ドロップダウンの表示/非表示を切り替え
+const toggleOrderDropdown = () => {
+    isOrderDropdownOpen.value = !isOrderDropdownOpen.value;
+};
+
+// 並び順の選択
+const selectOrder = async (order) => {
+    selectedOrderId.value = order.id;
+    await handleSavedOrderSelect();
+    isOrderDropdownOpen.value = false;
+};
+
+// 削除の確認と実行
+const confirmDeleteOrder = async (order) => {
+    const message = order.name
+        ? `並び順「${order.name}」を削除してもよろしいですか？`
+        : '選択した並び順を削除してもよろしいですか？';
+
+    if (confirm(message)) {
+        try {
+            await taskStore.deleteSavedOrder(order.id);
+            if (selectedOrderId.value === order.id) {
+                selectedOrderId.value = '';
+            }
+            isOrderDropdownOpen.value = false;
+        } catch (error) {
+            console.error('並び順の削除に失敗しました:', error);
+        }
+    }
+};
+
+// クリックイベントのハンドラーを追加
+onMounted(() => {
+    document.addEventListener('click', (event) => {
+        const dropdown = document.querySelector('.relative');
+        if (dropdown && !dropdown.contains(event.target)) {
+            isOrderDropdownOpen.value = false;
+        }
+    });
+});
 
 onMounted(async () => {
     await Promise.all([
@@ -277,5 +361,17 @@ const deleteTask = async (taskId) => {
     touch-action: none;
     width: 100%;
     height: 100%;
+}
+
+.relative {
+    position: relative;
+}
+
+.absolute {
+    position: absolute;
+}
+
+.z-10 {
+    z-index: 10;
 }
 </style>

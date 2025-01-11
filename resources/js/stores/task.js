@@ -117,16 +117,19 @@ export const useTaskStore = defineStore('task', {
             }
         },
 
-        async updateTaskOrder(newOrder) {
+        async updateTaskOrder(taskIds) {
             this.isLoading = true;
             try {
-                const taskIds = Array.isArray(newOrder) ? newOrder : newOrder.map(task => task.id);
+                if (!Array.isArray(taskIds)) {
+                    throw new Error('Invalid task order format');
+                }
+
                 const response = await axios.put('/api/tasks/order', {
                     taskOrder: taskIds,
                     isCustomOrder: true
                 });
 
-                this.tasks = this.tasks.map((task, index) => ({
+                this.tasks = this.tasks.map(task => ({
                     ...task,
                     sort_order: taskIds.indexOf(task.id)
                 }));
@@ -218,16 +221,15 @@ export const useTaskStore = defineStore('task', {
             }
         },
 
-        // 既存のapplySortメソッドを修正
+
         async applySort(sortType) {
-            // カスタム並び順が適用されている場合のみ保存確認を表示
             if (this.isCustomOrder && this.currentOrderId !== null) {
                 const result = confirm('現在の並び順を保存しますか？');
-
+        
                 if (result) {
                     const name = prompt('並び順の名前を入力してください（省略可）:');
                     const description = prompt('説明を入力してください（省略可）:');
-
+        
                     try {
                         await this.saveTaskOrder(
                             this.tasks.map(task => task.id),
@@ -241,7 +243,7 @@ export const useTaskStore = defineStore('task', {
                     }
                 }
             }
-
+        
             const sortedTasks = [...this.tasks];
             switch (sortType) {
                 case 'created_desc':
@@ -255,12 +257,11 @@ export const useTaskStore = defineStore('task', {
                     });
                     break;
             }
-
+        
             try {
                 const taskIds = sortedTasks.map(task => task.id);
                 await this.updateTaskOrder(taskIds);
 
-                // 成功したら状態を更新
                 this.tasks = sortedTasks;
                 this.isCustomOrder = false;
                 this.currentOrderId = null;
