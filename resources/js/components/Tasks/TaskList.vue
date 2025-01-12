@@ -4,15 +4,28 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold">タスク一覧</h1>
             <div class="flex gap-2">
-                <!-- 保存済み並び順の選択 -->
-                <!-- <select v-model="selectedOrderId" @change="handleSavedOrderSelect"
-                    class="border rounded-md py-2 px-3 text-gray-700">
-                    <option value="">保存済みの並び順</option>
-                    <option v-for="order in taskStore.savedOrders" :key="order.id" :value="order.id">
-                        {{ order.name || order.created_at }}
-                        {{ order.description ? `(${order.description})` : '' }}
-                    </option>
-                </select> -->
+
+                <!-- 表示切り替えボタン -->
+                <div class="flex rounded-md shadow-sm" role="group">
+                    <button @click="taskStore.setViewMode('list')" :class="[
+                        'px-4 py-2 text-sm font-medium border',
+                        taskStore.viewMode === 'list'
+                            ? 'bg-blue-500 text-white border-blue-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    ]">
+                        <span class="sr-only">リスト表示</span>
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button @click="taskStore.setViewMode('card')" :class="[
+                        'px-4 py-2 text-sm font-medium border-t border-b border-r',
+                        taskStore.viewMode === 'card'
+                            ? 'bg-blue-500 text-white border-blue-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    ]">
+                        <span class="sr-only">カード表示</span>
+                        <i class="fas fa-grid-2"></i>
+                    </button>
+                </div>
 
                 <!-- 保存済み並び順の選択（カスタムドロップダウン） -->
                 <div class="relative">
@@ -133,6 +146,9 @@
             タスクが見つかりません
         </div>
 
+        <component :is="taskStore.viewMode === 'list' ? TaskListView : TaskCardView" v-model:tasks="draggedTasks"
+            @drag-end="handleDragEnd" @delete-task="deleteTask" v-else />
+
         <draggable v-model="draggedTasks" class="grid gap-4" @end="handleDragEnd" :animation="200" ghost-class="ghost"
             drag-class="drag" :disabled="false" item-key="id" :force-fallback="true" handle=".drag-handle">
             <template #item="{ element: task }">
@@ -178,6 +194,8 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useTaskStore } from '@/stores/task';
 import { useTagStore } from '@/stores/tag';
+import TaskListView from './TaskListView.vue';
+import TaskCardView from './TaskCardView.vue';
 import draggable from 'vuedraggable';
 import { useRouter } from 'vue-router';
 

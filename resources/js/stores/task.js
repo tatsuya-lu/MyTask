@@ -14,7 +14,8 @@ export const useTaskStore = defineStore('task', {
         },
         isCustomOrder: false,
         savedOrders: [],
-        currentOrderId: null
+        currentOrderId: null,
+        viewMode: localStorage.getItem('taskViewMode') || 'list'
     }),
 
     getters: {
@@ -39,6 +40,10 @@ export const useTaskStore = defineStore('task', {
     },
 
     actions: {
+        setViewMode(mode) {
+            this.viewMode = mode;
+            localStorage.setItem('taskViewMode', mode);
+        },
         setFilter(filterType, value) {
             this.filters[filterType] = value;
         },
