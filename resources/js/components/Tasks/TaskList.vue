@@ -6,38 +6,32 @@
             <div class="flex gap-2">
 
                 <!-- 表示切り替えボタン -->
-                <div class="flex rounded-md shadow-sm" role="group">
-                    <button @click="taskStore.setViewMode('list')" :class="[
-                        'px-4 py-2 text-sm font-medium border',
-                        taskStore.viewMode === 'list'
-                            ? 'bg-blue-500 text-white border-blue-500'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    ]">
-                        <span class="sr-only">リスト表示</span>
-                        <i class="fas fa-list"></i>
-                    </button>
-                    <button @click="taskStore.setViewMode('card')" :class="[
-                        'px-4 py-2 text-sm font-medium border-t border-b border-r',
-                        taskStore.viewMode === 'card'
-                            ? 'bg-blue-500 text-white border-blue-500'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    ]">
-                        <span class="sr-only">カード表示</span>
-                        <i class="fas fa-grid-2"></i>
+                <div class="flex items-center">
+                    <span class="mr-3 text-sm font-medium text-gray-700">
+                        カード表示
+                    </span>
+                    <button type="button" role="switch" :aria-checked="taskStore.viewMode === 'card'"
+                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        :class="taskStore.viewMode === 'card' ? 'bg-blue-500' : 'bg-gray-200'" @click="toggleView"
+                        @keydown.space.prevent="toggleView">
+                        <span class="sr-only">カード表示の切り替え</span>
+                        <span aria-hidden="true"
+                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                            :class="taskStore.viewMode === 'card' ? 'translate-x-5' : 'translate-x-0'"></span>
                     </button>
                 </div>
 
                 <!-- 保存済み並び順の選択（カスタムドロップダウン） -->
-                <div class="relative">
+                <div class="relative z-50" id="order-dropdown">
                     <button @click="toggleOrderDropdown"
                         class="border rounded-md py-2 px-3 text-gray-700 bg-white flex items-center justify-between min-w-[200px]">
                         <span>{{ selectedOrderName || '保存済みの並び順' }}</span>
-                        <span class="ml-2">▼</span>
+                        <i class="fas fa-chevron-down ml-2"></i>
                     </button>
 
                     <!-- ドロップダウンメニュー -->
                     <div v-if="isOrderDropdownOpen"
-                        class="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        class="absolute w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto z-30">
                         <div class="py-1">
                             <div v-if="taskStore.savedOrders.length === 0" class="px-4 py-2 text-gray-500">
                                 保存された並び順はありません
@@ -148,44 +142,6 @@
 
         <component :is="taskStore.viewMode === 'list' ? TaskListView : TaskCardView" v-model:tasks="draggedTasks"
             @drag-end="handleDragEnd" @delete-task="deleteTask" v-else />
-
-        <draggable v-model="draggedTasks" class="grid gap-4" @end="handleDragEnd" :animation="200" ghost-class="ghost"
-            drag-class="drag" :disabled="false" item-key="id" :force-fallback="true" handle=".drag-handle">
-            <template #item="{ element: task }">
-                <div class="bg-white p-4 rounded shadow">
-                    <div class="drag-handle">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h3 class="font-semibold">{{ task.title }}</h3>
-                                <p class="text-gray-600 text-sm mt-1">{{ task.description }}</p>
-                                <!-- タグの表示 -->
-                                <div class="mt-2 flex flex-wrap gap-1">
-                                    <span v-for="tag in task.tags" :key="tag.id" class="px-2 py-1 rounded text-sm"
-                                        :style="{
-                                            backgroundColor: tag.color + '20',
-                                            color: tag.color,
-                                            borderColor: tag.color,
-                                            borderWidth: '1px'
-                                        }">
-                                        {{ tag.name }}
-                                    </span>
-                                </div>
-                            </div>
-                            <!-- 操作ボタン -->
-                            <div class="flex gap-2">
-                                <router-link :to="{ name: 'task-edit', params: { id: task.id } }"
-                                    class="text-blue-500 hover:text-blue-700">
-                                    編集
-                                </router-link>
-                                <button @click.stop="deleteTask(task.id)" class="text-red-500 hover:text-red-700">
-                                    削除
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </template>
-        </draggable>
     </div>
 </template>
 
@@ -206,6 +162,10 @@ const tagStore = useTagStore();
 const { isLoading, error } = storeToRefs(taskStore);
 const tasks = computed(() => taskStore.tasks);
 const filteredTasks = computed(() => taskStore.filteredTasks);
+
+const toggleView = () => {
+    taskStore.setViewMode(taskStore.viewMode === 'list' ? 'card' : 'list');
+};
 
 const draggedTasks = computed({
     get: () => filteredTasks.value,
@@ -332,7 +292,7 @@ const confirmDeleteOrder = async (order) => {
 // クリックイベントのハンドラーを追加
 onMounted(() => {
     document.addEventListener('click', (event) => {
-        const dropdown = document.querySelector('.relative');
+        const dropdown = document.getElementById('order-dropdown');
         if (dropdown && !dropdown.contains(event.target)) {
             isOrderDropdownOpen.value = false;
         }
