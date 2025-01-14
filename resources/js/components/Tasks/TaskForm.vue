@@ -67,8 +67,8 @@
                     期限日
                 </label>
                 <Datepicker v-model="form.due_date" :format="formatDate" :parse="parseDate" locale="ja"
-                    :enable-time-picker="false" :clearable="true" :auto-apply="true" placeholder="期限日を選択"
-                    input-class-name="w-full px-4 py-2 border rounded-lg" />
+                    :enable-time-picker="false" :clearable="true" :auto-apply="true" text-input model-type="date"
+                    placeholder="期限日を選択" input-class-name="w-full px-4 py-2 border rounded-lg" />
             </div>
 
             <!-- タグ選択フィールド -->
@@ -162,13 +162,14 @@ const formatDate = (date) => {
     if (!date) return '';
     const d = new Date(date);
     if (isNaN(d.getTime())) return '';
-    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+    return `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, '0')}月${String(d.getDate()).padStart(2, '0')}日`;
 };
 
 const parseDate = (dateStr) => {
     if (!dateStr) return null;
-    const date = new Date(dateStr);
-    return isNaN(date.getTime()) ? null : date;
+    const parts = dateStr.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+    if (!parts) return null;
+    return new Date(parts[1], parts[2] - 1, parts[3]);
 };
 
 const form = ref({
@@ -225,9 +226,11 @@ const handleSubmit = async () => {
 
     try {
         const submitData = { ...form.value }
-        if (submitData.due_date) {
-            const localDate = new Date(submitData.due_date)
-            submitData.due_date = `${localDate.getFullYear()}-${String(localDate.getMonth() + 1).padStart(2, '0')}-${String(localDate.getDate()).padStart(2, '0')}`
+        if (submitData.due_date instanceof Date) {
+            const year = submitData.due_date.getFullYear();
+            const month = String(submitData.due_date.getMonth() + 1).padStart(2, '0');
+            const day = String(submitData.due_date.getDate()).padStart(2, '0');
+            submitData.due_date = `${year}-${month}-${day}`;
         }
 
         await axios.get('/sanctum/csrf-cookie')
@@ -289,7 +292,11 @@ onMounted(async () => {
             const response = await axios.get(`/api/tasks/${targetTaskId}`);
             const task = response.data.data;
 
-            const dueDate = task.due_date ? new Date(task.due_date + 'T00:00:00') : null;
+            console.log('フォーム初期化時の due_date:', task.due_date);
+
+            const dueDate = task.due_date ? new Date(`${task.due_date}T00:00:00`) : null;
+
+            console.log('変換後の due_date:', dueDate);
 
             form.value = {
                 ...task,
@@ -299,6 +306,9 @@ onMounted(async () => {
                 status: task.status || 'not_started',
                 tags: task.tags ? task.tags.map(tag => tag.id) : []
             };
+
+            console.log('フォームに設定される値:', form.value.due_date);
+
         } catch (error) {
             console.error('タスクの取得に失敗しました:', error);
             if (!props.isModal) {

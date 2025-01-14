@@ -20,7 +20,7 @@ class TaskResource extends JsonResource
             'priority' => $this->priority->value,
             'priority_label' => $this->priority->label(),
             'progress' => $this->progress,
-            'due_date' => $this->due_date,
+            'due_date' => $this->due_date ? $this->due_date->format('Y-m-d') : null,
             'is_archived' => $this->is_archived,
             'tags' => $this->whenLoaded('tags'),
             'created_at' => $this->created_at,
