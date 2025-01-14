@@ -5,6 +5,13 @@
             <h1 class="text-2xl font-bold">タスク一覧</h1>
             <div class="flex gap-2">
 
+                <!-- 表示設定ボタン -->
+                <button @click="isSettingsOpen = true"
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded flex items-center gap-2">
+                    <i class="fas fa-cog"></i>
+                    <span>表示設定</span>
+                </button>
+
                 <!-- 表示切り替えボタン -->
                 <div class="flex items-center">
                     <span class="mr-3 text-sm font-medium text-gray-700">
@@ -17,7 +24,8 @@
                         <span class="sr-only">カード表示の切り替え</span>
                         <span aria-hidden="true"
                             class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                            :class="taskStore.viewMode === 'card' ? 'translate-x-5' : 'translate-x-0'"></span>
+                            :class="taskStore.viewMode === 'card' ? 'translate-x-5' : 'translate-x-0'">
+                        </span>
                     </button>
                 </div>
 
@@ -127,7 +135,9 @@
             </div>
         </div>
 
-        <!-- タスク一覧 -->
+        <!-- タスク表示設定モーダル -->
+        <TaskDisplaySettings :is-open="isSettingsOpen" @close="isSettingsOpen = false" />
+
         <div v-if="isLoading" class="text-center py-4">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
         </div>
@@ -152,12 +162,15 @@ import { useTaskStore } from '@/stores/task';
 import { useTagStore } from '@/stores/tag';
 import TaskListView from './TaskListView.vue';
 import TaskCardView from './TaskCardView.vue';
+import TaskDisplaySettings from './TaskDisplaySettings.vue';
 import draggable from 'vuedraggable';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const taskStore = useTaskStore();
 const tagStore = useTagStore();
+
+const isSettingsOpen = ref(false);
 
 const { isLoading, error } = storeToRefs(taskStore);
 const tasks = computed(() => taskStore.tasks);

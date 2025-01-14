@@ -5,27 +5,16 @@
             <div class="bg-white p-4 rounded shadow">
                 <div class="drag-handle">
                     <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="font-semibold">{{ task.title }}</h3>
-                            <p class="text-gray-600 text-sm mt-1">{{ task.description }}</p>
-                            <div class="mt-2 flex flex-wrap gap-1">
-                                <span v-for="tag in task.tags" :key="tag.id" class="px-2 py-1 rounded text-sm" :style="{
-                                    backgroundColor: tag.color + '20',
-                                    color: tag.color,
-                                    borderColor: tag.color,
-                                    borderWidth: '1px'
-                                }">
-                                    {{ tag.name }}
-                                </span>
-                            </div>
+                        <div class="flex-grow">
+                            <TaskDisplayContent :task="task" />
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 ml-4 flex-shrink-0">
                             <router-link :to="{ name: 'task-edit', params: { id: task.id } }"
                                 class="text-blue-500 hover:text-blue-700">
-                                <i class="fas fa-edit mr-1"></i>編集
+                                <i class="fas fa-edit"></i>
                             </router-link>
                             <button @click.stop="$emit('delete-task', task.id)" class="text-red-500 hover:text-red-700">
-                                <i class="fas fa-trash-alt mr-1"></i>削除
+                                <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
                     </div>
@@ -38,6 +27,7 @@
 <script setup>
 import { computed } from 'vue';
 import draggable from 'vuedraggable';
+import TaskDisplayContent from './TaskDisplayContent.vue';
 
 const props = defineProps({
     tasks: {

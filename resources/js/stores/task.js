@@ -15,7 +15,19 @@ export const useTaskStore = defineStore('task', {
         isCustomOrder: false,
         savedOrders: [],
         currentOrderId: null,
-        viewMode: localStorage.getItem('taskViewMode') || 'list'
+        viewMode: localStorage.getItem('taskViewMode') || 'list',
+        displaySettings: JSON.parse(localStorage.getItem('taskDisplaySettings')) || {
+            title: true,
+            description: true,
+            priority: true,
+            status: true,
+            progress: {
+                show: true,
+                type: 'percentage'
+            },
+            dueDate: true,
+            tags: true
+        }
     }),
 
     getters: {
@@ -274,6 +286,11 @@ export const useTaskStore = defineStore('task', {
                 this.error = error.response?.data?.message || 'ソートの適用に失敗しました';
                 throw error;
             }
+        },
+
+        updateDisplaySettings(settings) {
+            this.displaySettings = settings;
+            localStorage.setItem('taskDisplaySettings', JSON.stringify(settings));
         }
     }
 });
