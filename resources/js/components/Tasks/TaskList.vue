@@ -132,8 +132,47 @@
                         </option>
                     </select>
                 </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        期限日
+                    </label>
+                    <div class="relative">
+                        <select v-model="selectedDueDateFilter"
+                            class="w-full border rounded-md py-2 px-3 text-gray-700 pr-20" @change="handleFilterChange">
+                            <option value="">すべて</option>
+                            <optgroup label="デフォルト">
+                                <option v-for="filter in dueDateFilterStore.defaultFilters" :key="filter.id"
+                                    :value="filter">
+                                    {{ filter.name }}
+                                </option>
+                            </optgroup>
+                            <optgroup label="カスタム" v-if="dueDateFilterStore.customFilters.length">
+                                <option v-for="filter in dueDateFilterStore.customFilters" :key="filter.id"
+                                    :value="filter">
+                                    {{ filter.name }}
+
+                                </option>
+                            </optgroup>
+                        </select>
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-2">
+                            <button @click="openCreateFilterModal" type="button"
+                                class="text-blue-500 hover:text-blue-700" title="フィルターを追加">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button v-if="selectedDueDateFilter && !isDefaultFilter(selectedDueDateFilter)"
+                                @click="confirmDeleteFilter(selectedDueDateFilter)" type="button"
+                                class="text-red-500 hover:text-red-700" title="フィルターを削除">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <CreateDueDateFilterModal :is-open="isCreateFilterModalOpen" @close="isCreateFilterModalOpen = false"
+            @created="handleFilterCreated" />
 
         <!-- タスク表示設定モーダル -->
         <TaskDisplaySettings :is-open="isSettingsOpen" @close="isSettingsOpen = false" />
@@ -163,6 +202,8 @@ import { useTagStore } from '@/stores/tag';
 import TaskListView from './TaskListView.vue';
 import TaskCardView from './TaskCardView.vue';
 import TaskDisplaySettings from './TaskDisplaySettings.vue';
+import CreateDueDateFilterModal from './CreateDueDateFilterModal.vue';
+import { useDueDateFilterStore } from '@/stores/dueDateFilter';
 import draggable from 'vuedraggable';
 import { useRouter } from 'vue-router';
 
@@ -175,6 +216,9 @@ const isSettingsOpen = ref(false);
 const { isLoading, error } = storeToRefs(taskStore);
 const tasks = computed(() => taskStore.tasks);
 const filteredTasks = computed(() => taskStore.filteredTasks);
+const dueDateFilterStore = useDueDateFilterStore();
+const selectedDueDateFilter = ref(null);
+const isCreateFilterModalOpen = ref(false);
 
 const toggleView = () => {
     taskStore.setViewMode(taskStore.viewMode === 'list' ? 'card' : 'list');
@@ -225,10 +269,37 @@ const handleSearch = () => {
     taskStore.setFilter('searchQuery', searchQuery.value);
 };
 
+const isDefaultFilter = (filter) => {
+    return dueDateFilterStore.defaultFilters.some(df => df.id === filter.id);
+};
+
+const openCreateFilterModal = () => {
+    isCreateFilterModalOpen.value = true;
+};
+
+const handleFilterCreated = () => {
+    // 必要に応じてフィルターリストを更新
+};
+
+const confirmDeleteFilter = async (filter) => {
+    if (confirm(`フィルター「${filter.name}」を削除してもよろしいですか？`)) {
+        try {
+            await dueDateFilterStore.deleteFilter(filter.id);
+            if (selectedDueDateFilter.value?.id === filter.id) {
+                selectedDueDateFilter.value = null;
+                handleFilterChange();
+            }
+        } catch (error) {
+            console.error('フィルターの削除に失敗:', error);
+        }
+    }
+};
+
 const handleFilterChange = () => {
     taskStore.setFilter('status', selectedStatus.value);
     taskStore.setFilter('priority', selectedPriority.value);
     taskStore.setFilter('tagId', selectedTagId.value);
+    taskStore.setFilter('dueDateFilter', selectedDueDateFilter.value);
 };
 
 // 保存済み並び順の選択
@@ -316,7 +387,8 @@ onMounted(async () => {
     await Promise.all([
         taskStore.fetchTasks(),
         taskStore.fetchSavedOrders(),
-        tagStore.fetchTags()
+        tagStore.fetchTags(),
+        dueDateFilterStore.fetchCustomFilters()
     ]);
 });
 

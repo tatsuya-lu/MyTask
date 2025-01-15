@@ -7,6 +7,7 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\DueDateFilterController;
 
 /*
 |--------------------------------------------------------------------------
@@ -71,6 +72,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ロール一覧
     Route::get('/roles', [RoleController::class, 'index']);
+
+    Route::get('/due-date-filters', [DueDateFilterController::class, 'index']);
+    Route::post('/due-date-filters', [DueDateFilterController::class, 'store']);
+    Route::delete('/due-date-filters/{dueDateFilter}', [DueDateFilterController::class, 'destroy']);
 });
 
 // チーム関連のルート

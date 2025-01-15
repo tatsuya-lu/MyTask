@@ -95,4 +95,9 @@ class User extends Authenticatable
     {
         return $this->taskOrder()->where('is_custom_order', true)->first();
     }
+
+    public function dueDateFilters()
+    {
+        return $this->hasMany(DueDateFilter::class);
+    }
 }

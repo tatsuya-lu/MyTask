@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import dayjs from 'dayjs'
 
 export const useTaskStore = defineStore('task', {
     state: () => ({
@@ -10,7 +11,8 @@ export const useTaskStore = defineStore('task', {
             status: '',
             priority: '',
             tagId: '',
-            searchQuery: ''
+            searchQuery: '',
+            dueDateFilter: null
         },
         isCustomOrder: false,
         savedOrders: [],
@@ -40,7 +42,33 @@ export const useTaskStore = defineStore('task', {
                     task.title.toLowerCase().includes(state.filters.searchQuery.toLowerCase()) ||
                     task.description.toLowerCase().includes(state.filters.searchQuery.toLowerCase());
 
-                return matchesStatus && matchesPriority && matchesTag && matchesSearch;
+                let matchesDueDate = true;
+                if (state.filters.dueDateFilter) {
+                    const filter = state.filters.dueDateFilter;
+                    if (!task.due_date) {
+                        matchesDueDate = false;
+                    } else {
+                        const dueDate = dayjs(task.due_date);
+                        const now = dayjs();
+                        let endDate = now;
+
+                        switch (filter.duration_unit) {
+                            case 'day':
+                                endDate = now.add(filter.duration_value, 'day');
+                                break;
+                            case 'week':
+                                endDate = now.add(filter.duration_value * 7, 'day');
+                                break;
+                            case 'month':
+                                endDate = now.add(filter.duration_value, 'month');
+                                break;
+                        }
+
+                        matchesDueDate = dueDate.isBefore(endDate) || dueDate.isSame(endDate, 'day');
+                    }
+                }
+
+                return matchesStatus && matchesPriority && matchesTag && matchesSearch && matchesDueDate;
             });
 
             if (state.isCustomOrder) {
@@ -242,11 +270,11 @@ export const useTaskStore = defineStore('task', {
         async applySort(sortType) {
             if (this.isCustomOrder && this.currentOrderId !== null) {
                 const result = confirm('現在の並び順を保存しますか？');
-        
+
                 if (result) {
                     const name = prompt('並び順の名前を入力してください（省略可）:');
                     const description = prompt('説明を入力してください（省略可）:');
-        
+
                     try {
                         await this.saveTaskOrder(
                             this.tasks.map(task => task.id),
@@ -260,7 +288,7 @@ export const useTaskStore = defineStore('task', {
                     }
                 }
             }
-        
+
             const sortedTasks = [...this.tasks];
             switch (sortType) {
                 case 'created_desc':
@@ -274,7 +302,7 @@ export const useTaskStore = defineStore('task', {
                     });
                     break;
             }
-        
+
             try {
                 const taskIds = sortedTasks.map(task => task.id);
                 await this.updateTaskOrder(taskIds);
