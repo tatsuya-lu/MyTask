@@ -66,9 +66,9 @@
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="due_date">
                     期限日
                 </label>
-                <Datepicker v-model="form.due_date" :format="formatDate" :parse="parseDate" locale="ja"
-                    :enable-time-picker="false" :clearable="true" :auto-apply="true" text-input model-type="date"
-                    placeholder="期限日を選択" input-class-name="w-full px-4 py-2 border rounded-lg" />
+                <Datepicker v-model="form.due_date" locale="ja" weekStart="0" :enable-time-picker="false"
+                    :clearable="true" :auto-apply="true" :format="(date) => formatDateForDisplay(date)"
+                    input-class-name="w-full px-4 py-2 border rounded-lg" placeholder="期限日を選択" />
             </div>
 
             <!-- タグ選択フィールド -->
@@ -134,7 +134,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useTaskStore } from '../../stores/task';
 import { useTagStore } from '../../stores/tag';
 import { useRoute, useRouter } from 'vue-router';
@@ -220,17 +220,30 @@ const removeTag = (index) => {
     dynamicTags.value.splice(index, 1);
 };
 
+const formatDateForDisplay = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, '0')}月${String(d.getDate()).padStart(2, '0')}日`;
+};
+
+// handleSubmit関数内の日付処理部分を修正
 const handleSubmit = async () => {
     isLoading.value = true
     errors.value = {}
 
     try {
-        const submitData = { ...form.value }
-        if (submitData.due_date instanceof Date) {
-            const year = submitData.due_date.getFullYear();
-            const month = String(submitData.due_date.getMonth() + 1).padStart(2, '0');
-            const day = String(submitData.due_date.getDate()).padStart(2, '0');
-            submitData.due_date = `${year}-${month}-${day}`;
+        const submitData = { ...form.value };
+
+        // 日付のフォーマット処理を修正
+        if (submitData.due_date) {
+            const d = new Date(submitData.due_date)
+            if (!isNaN(d.getTime())) {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                submitData.due_date = `${year}-${month}-${day}`;
+            }
         }
 
         await axios.get('/sanctum/csrf-cookie')
@@ -279,6 +292,9 @@ const handleCancel = () => {
 }
 
 onMounted(async () => {
+    console.log('Mode:', props.isModal ? 'Modal' : 'Normal');
+    console.log('Initial Date:', props.initialDate);
+    console.log('Route params:', route.params);
     try {
         await tagStore.fetchTags();
     } catch (error) {
@@ -292,11 +308,12 @@ onMounted(async () => {
             const response = await axios.get(`/api/tasks/${targetTaskId}`);
             const task = response.data.data;
 
-            console.log('フォーム初期化時の due_date:', task.due_date);
-
-            const dueDate = task.due_date ? new Date(`${task.due_date}T00:00:00`) : null;
-
-            console.log('変換後の due_date:', dueDate);
+            // 日付の処理を修正
+            let dueDate = null;
+            if (task.due_date) {
+                const [year, month, day] = task.due_date.split('-');
+                dueDate = new Date(year, month - 1, day);
+            }
 
             form.value = {
                 ...task,
@@ -306,9 +323,6 @@ onMounted(async () => {
                 status: task.status || 'not_started',
                 tags: task.tags ? task.tags.map(tag => tag.id) : []
             };
-
-            console.log('フォームに設定される値:', form.value.due_date);
-
         } catch (error) {
             console.error('タスクの取得に失敗しました:', error);
             if (!props.isModal) {
@@ -316,8 +330,20 @@ onMounted(async () => {
             }
         }
     } else if (props.initialDate) {
-        const localDate = new Date(props.initialDate);
-        form.value.due_date = localDate;
+        form.value.due_date = new Date(props.initialDate);
+    }
+});
+
+// 日付の変更を監視して正しい形式かチェックするwatcherを追加
+watch(() => form.value.due_date, (newValue) => {
+    if (newValue && !(newValue instanceof Date)) {
+        // 日付形式ではない値が設定された場合、Dateオブジェクトに変換を試みる
+        const d = new Date(newValue);
+        if (!isNaN(d.getTime())) {
+            form.value.due_date = d;
+        } else {
+            console.error('Invalid date value:', newValue);
+        }
     }
 });
 </script>
