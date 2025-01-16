@@ -68,7 +68,8 @@
                 </label>
                 <Datepicker v-model="form.due_date" locale="ja" weekStart="0" :enable-time-picker="false"
                     :clearable="true" :auto-apply="true" :format="(date) => formatDateForDisplay(date)"
-                    input-class-name="w-full px-4 py-2 border rounded-lg" placeholder="期限日を選択" />
+                    input-class-name="w-full px-4 py-2 border rounded-lg" placeholder="期限日を選択"
+                    :day-class="getDayClass" />
             </div>
 
             <!-- タグ選択フィールド -->
@@ -157,6 +158,13 @@ const isEditing = computed(() => {
 });
 const isLoading = ref(false);
 const errors = ref({});
+
+const getDayClass = (date) => {
+    const dayOfWeek = new Date(date).getDay();
+    if (dayOfWeek === 0) return 'dp-weekend-sunday';
+    if (dayOfWeek === 6) return 'dp-weekend-saturday';
+    return '';
+};
 
 const formatDate = (date) => {
     if (!date) return '';
@@ -347,3 +355,12 @@ watch(() => form.value.due_date, (newValue) => {
     }
 });
 </script>
+<style>
+.dp-weekend-saturday {
+    color: #3b82f6;
+}
+
+.dp-weekend-sunday {
+    color: #ef4444;
+}
+</style>
