@@ -17,9 +17,9 @@
                         class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
                         カレンダー
                     </router-link>
-                    <router-link :to="{ name: 'teams' }"
+                    <router-link :to="{ name: 'tags' }"
                         class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
-                        チーム機能
+                        タグ一覧
                     </router-link>
                     <button @click="logout" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
                         ログアウト
