@@ -32,13 +32,13 @@ class TaskController extends Controller
 
         $query = $this->taskService->getFilteredTasks($filters);
 
-        // カレンダー表示の場合はページネーションを無効化
-        if ($request->has('start_date') && $request->has('end_date')) {
-            return TaskResource::collection($query->get());
+        // ページネーションの有無をリクエストパラメータで制御
+        if ($request->input('paginate', false)) {
+            $perPage = $request->input('per_page', 10);
+            return TaskResource::collection($query->paginate($perPage));
         }
 
-        $perPage = $request->input('per_page', 10);
-        return TaskResource::collection($query->paginate($perPage));
+        return TaskResource::collection($query->get());
     }
 
     public function share(Request $request, Task $task)

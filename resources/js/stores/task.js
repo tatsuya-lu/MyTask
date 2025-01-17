@@ -100,13 +100,16 @@ export const useTaskStore = defineStore('task', {
         async fetchTasks(filters = {}) {
             this.isLoading = true;
             try {
-                const queryParams = new URLSearchParams(filters).toString();
+                const queryParams = new URLSearchParams({
+                    ...filters,
+                    paginate: false
+                }).toString();
+
                 const response = await axios.get(`/api/tasks?${queryParams}`);
                 this.tasks = response.data.data.map(task => ({
                     ...task,
                     tags: task.tags || []
                 }));
-                // レスポンスからカスタム並び順の状態を設定
                 this.isCustomOrder = response.data.isCustomOrder || false;
             } catch (error) {
                 this.error = error.response?.data?.message || 'タスクの取得に失敗しました';
