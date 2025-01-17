@@ -123,7 +123,7 @@
                 <button type="submit"
                     class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                     :disabled="isLoading">
-                    {{ isLoading ? '保存中...' : (taskId ? '更新' : '作成') }}
+                    {{ isLoading ? '保存中...' : (isEditing ? '更新' : '作成') }}
                 </button>
                 <button type="button" @click="handleCancel"
                     class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
@@ -149,11 +149,9 @@ const taskStore = useTaskStore();
 const tagStore = useTagStore();
 
 const isEditing = computed(() => {
-    // モーダルの場合は props.taskId を使用
     if (props.isModal) {
         return !!props.taskId;
     }
-    // 通常モードの場合は route.params.id を使用
     return !!route.params.id;
 });
 const isLoading = ref(false);
@@ -235,17 +233,15 @@ const formatDateForDisplay = (date) => {
     return `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, '0')}月${String(d.getDate()).padStart(2, '0')}日`;
 };
 
-// handleSubmit関数内の日付処理部分を修正
 const handleSubmit = async () => {
-    isLoading.value = true
-    errors.value = {}
+    isLoading.value = true;
+    errors.value = {};
 
     try {
         const submitData = { ...form.value };
 
-        // 日付のフォーマット処理を修正
         if (submitData.due_date) {
-            const d = new Date(submitData.due_date)
+            const d = new Date(submitData.due_date);
             if (!isNaN(d.getTime())) {
                 const year = d.getFullYear();
                 const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -254,42 +250,43 @@ const handleSubmit = async () => {
             }
         }
 
-        await axios.get('/sanctum/csrf-cookie')
+        await axios.get('/sanctum/csrf-cookie');
 
         const newTagPromises = dynamicTags.value.map(tag => {
             return tagStore.createTag({
                 name: tag.name,
                 color: tag.color
-            })
-        })
+            });
+        });
 
-        const createdTags = await Promise.all(newTagPromises)
-        const newTagIds = createdTags.map(tag => tag.id)
-        submitData.tags = [...(submitData.tags || []), ...newTagIds]
+        const createdTags = await Promise.all(newTagPromises);
+        const newTagIds = createdTags.map(tag => tag.id);
+        submitData.tags = [...(submitData.tags || []), ...newTagIds];
 
-        if (props.taskId) {
-            await taskStore.updateTask(props.taskId, submitData)
+        if (isEditing.value) {
+            const taskId = props.isModal ? props.taskId : route.params.id;
+            await taskStore.updateTask(taskId, submitData);
         } else {
-            const newTask = await taskStore.createTask(submitData)
+            const newTask = await taskStore.createTask(submitData);
             if (!newTask || !newTask.id) {
-                throw new Error('タスクの作成に失敗しました')
+                throw new Error('タスクの作成に失敗しました');
             }
         }
 
         if (props.isModal) {
-            emit('saved')
+            emit('saved');
         } else {
-            router.push({ name: 'tasks' })
+            router.push({ name: 'tasks' });
         }
     } catch (error) {
-        console.error('エラーの詳細:', error)
+        console.error('エラーの詳細:', error);
         if (error.response?.status === 422) {
-            errors.value = error.response.data.errors
+            errors.value = error.response.data.errors;
         }
     } finally {
-        isLoading.value = false
+        isLoading.value = false;
     }
-}
+};
 
 const handleCancel = () => {
     if (props.isModal) {
