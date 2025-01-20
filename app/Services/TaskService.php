@@ -178,4 +178,11 @@ class TaskService
             ->findOrFail($orderId)
             ->delete();
     }
+
+    public function hasCustomOrder()
+    {
+        return UserTaskOrder::where('user_id', auth()->id())
+            ->where('is_custom_order', true)
+            ->exists();
+    }
 }

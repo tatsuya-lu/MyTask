@@ -14,6 +14,12 @@ export const useTaskStore = defineStore('task', {
             searchQuery: '',
             dueDateFilter: null
         },
+        pagination: {
+            enabled: JSON.parse(localStorage.getItem('taskPaginationEnabled')) || false,
+            currentPage: 1,
+            perPage: 9,
+            total: 0
+        },
         isCustomOrder: false,
         savedOrders: [],
         currentOrderId: null,
@@ -102,14 +108,25 @@ export const useTaskStore = defineStore('task', {
             try {
                 const queryParams = new URLSearchParams({
                     ...filters,
-                    paginate: false
+                    paginate: this.pagination.enabled,
+                    per_page: this.pagination.perPage,
+                    page: this.pagination.currentPage
                 }).toString();
-
+        
                 const response = await axios.get(`/api/tasks?${queryParams}`);
-                this.tasks = response.data.data.map(task => ({
-                    ...task,
-                    tags: task.tags || []
-                }));
+                
+                if (this.pagination.enabled) {
+                    this.tasks = response.data.data.map(task => ({
+                        ...task,
+                        tags: task.tags || []
+                    }));
+                    this.pagination.total = response.data.meta.total;
+                } else {
+                    this.tasks = response.data.data.map(task => ({
+                        ...task,
+                        tags: task.tags || []
+                    }));
+                }
                 this.isCustomOrder = response.data.isCustomOrder || false;
             } catch (error) {
                 this.error = error.response?.data?.message || 'タスクの取得に失敗しました';
@@ -117,6 +134,17 @@ export const useTaskStore = defineStore('task', {
             } finally {
                 this.isLoading = false;
             }
+        },
+
+        setPaginationEnabled(enabled) {
+            this.pagination.enabled = enabled;
+            this.pagination.currentPage = 1;
+            localStorage.setItem('taskPaginationEnabled', JSON.stringify(enabled));
+        },
+
+        setPage(page) {
+            this.pagination.currentPage = page;
+            this.fetchTasks(this.filters);
         },
 
         async createTask(taskData) {

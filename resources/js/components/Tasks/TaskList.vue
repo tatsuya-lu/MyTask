@@ -12,6 +12,22 @@
                     <span>表示設定</span>
                 </button>
 
+                <!-- ページネーション切り替えトグル -->
+                <div class="flex items-center mr-4">
+                    <span class="mr-3 text-sm font-medium text-gray-700">
+                        ページネーション
+                    </span>
+                    <button type="button" role="switch" :aria-checked="taskStore.pagination.enabled"
+                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        :class="taskStore.pagination.enabled ? 'bg-blue-500' : 'bg-gray-200'" @click="togglePagination">
+                        <span class="sr-only">ページネーションの切り替え</span>
+                        <span aria-hidden="true"
+                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                            :class="taskStore.pagination.enabled ? 'translate-x-5' : 'translate-x-0'">
+                        </span>
+                    </button>
+                </div>
+
                 <!-- 表示切り替えボタン -->
                 <div class="flex items-center">
                     <span class="mr-3 text-sm font-medium text-gray-700">
@@ -191,6 +207,21 @@
 
         <component :is="taskStore.viewMode === 'list' ? TaskListView : TaskCardView" v-model:tasks="draggedTasks"
             @drag-end="handleDragEnd" @delete-task="deleteTask" v-else />
+
+        <div v-if="taskStore.pagination.enabled" class="mt-4">
+            <div class="flex justify-center">
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <button v-for="page in totalPages" :key="page" @click="taskStore.setPage(page)" :class="[
+                        'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
+                        page === taskStore.pagination.currentPage
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    ]">
+                        {{ page }}
+                    </button>
+                </nav>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -230,6 +261,15 @@ const draggedTasks = computed({
         // handleDragEndで処理するため、ここでは何もしない
     }
 });
+
+const totalPages = computed(() => {
+    return Math.ceil(taskStore.pagination.total / taskStore.pagination.perPage);
+});
+
+const togglePagination = async () => {
+    taskStore.setPaginationEnabled(!taskStore.pagination.enabled);
+    await taskStore.fetchTasks(taskStore.filters);
+};
 
 const selectedOrderId = ref('');
 

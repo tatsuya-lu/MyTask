@@ -32,13 +32,18 @@ class TaskController extends Controller
 
         $query = $this->taskService->getFilteredTasks($filters);
 
-        // ページネーションの有無をリクエストパラメータで制御
-        if ($request->input('paginate', false)) {
-            $perPage = $request->input('per_page', 10);
-            return TaskResource::collection($query->paginate($perPage));
+        if ($request->boolean('paginate')) {
+            $perPage = $request->input('per_page', 9);
+            $tasks = $query->paginate($perPage);
+            return TaskResource::collection($tasks)->additional([
+                'isCustomOrder' => $this->taskService->hasCustomOrder()
+            ]);
         }
 
-        return TaskResource::collection($query->get());
+        $tasks = $query->get();
+        return TaskResource::collection($tasks)->additional([
+            'isCustomOrder' => $this->taskService->hasCustomOrder()
+        ]);
     }
 
     public function share(Request $request, Task $task)
