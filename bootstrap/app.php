@@ -5,7 +5,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Configuration\Scheduled;
-use Illuminate\Console\Scheduling\Schedule; 
+use Illuminate\Console\Scheduling\Schedule;
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -25,6 +25,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // グローバルミドルウェアにCORSを追加
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
         $middleware->append(\Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class);
+    })
+    // CSRF除外
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'sanctum/csrf-cookie'
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

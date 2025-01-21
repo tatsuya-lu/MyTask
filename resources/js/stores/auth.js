@@ -23,14 +23,23 @@ export const useAuthStore = defineStore('auth', {
 
         async login(credentials) {
             try {
-                const response = await axios.post('/api/auth/login', credentials)
+                await axios.get('/sanctum/csrf-cookie')
+                
+                const response = await axios.post('/api/auth/login', credentials, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                
                 this.user = response.data.user
                 this.token = response.data.token
                 localStorage.setItem('token', this.token)
                 axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
                 return response.data
             } catch (error) {
-                throw error.response.data
+                console.error('Login error:', error.response?.data || error)
+                throw error.response?.data || error
             }
         },
 
