@@ -49,6 +49,10 @@
                             </div>
                         </div>
                     </div>
+                    <router-link :to="{ name: 'notification-settings' }"
+                        class="px-4 py-2 text-sm font-medium text-white bg-green-200 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        通知設定
+                    </router-link>
                     <router-link :to="{ name: 'task-create' }"
                         class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         新規タスク
