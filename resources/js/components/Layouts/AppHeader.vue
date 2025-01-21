@@ -21,7 +21,7 @@
                         <div v-if="showNotifications"
                             class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg overflow-hidden z-50">
                             <div class="py-2">
-                                <div v-if="notifications.length === 0" class="px-4 py-2 text-sm text-gray-500">
+                                <div v-if="notificationStore.notifications.length === 0" class="px-4 py-2 text-sm text-gray-500">
                                     通知はありません
                                 </div>
                                 <div v-else v-for="notification in notificationStore.notifications"
