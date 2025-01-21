@@ -60,9 +60,8 @@ export const useAuthStore = defineStore('auth', {
 
         async fetchUser() {
             if (!this.token) return false;
-
+        
             try {
-                await axios.get('/sanctum/csrf-cookie');
                 axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
                 const response = await axios.get('/api/auth/profile');
                 this.user = response.data.user;
