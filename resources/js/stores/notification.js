@@ -1,55 +1,69 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 
-export const useNotificationStore = defineStore('notification', () => {
-    const notifications = ref([])
-    const unreadCount = ref(0)
-    const loading = ref(false)
+export const useNotificationStore = defineStore('notification', {
+    state: () => ({
+        notifications: [],
+        unreadCount: 0,
+        loading: false,
+        error: null
+    }),
 
-    const fetchNotifications = async () => {
-        loading.value = true
-        try {
-            const response = await axios.get('/api/notifications')
-            notifications.value = response.data.notifications
-            unreadCount.value = response.data.unread_count
-        } catch (error) {
-            console.error('通知の取得に失敗しました:', error)
-        } finally {
-            loading.value = false
-        }
-    }
+    getters: {
+        hasUnreadNotifications: (state) => state.unreadCount > 0,
+        sortedNotifications: (state) => [...state.notifications].sort((a, b) => {
+            return new Date(b.created_at) - new Date(a.created_at)
+        })
+    },
 
-    const markAsRead = async (notificationId) => {
-        try {
-            await axios.put(`/api/notifications/${notificationId}/read`)
-            const notification = notifications.value.find(n => n.id === notificationId)
-            if (notification && !notification.is_read) {
-                notification.is_read = true
-                unreadCount.value--
+    actions: {
+        async fetchNotifications() {
+            this.loading = true
+            try {
+                const token = localStorage.getItem('token')
+                if (token) {
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+                }
+
+                const response = await axios.get('/api/notifications')
+                this.notifications = response.data.notifications
+                this.unreadCount = response.data.unread_count
+            } catch (error) {
+                this.error = error.response?.data?.message || '通知の取得に失敗しました'
+                throw error
+            } finally {
+                this.loading = false
             }
-        } catch (error) {
-            console.error('通知の既読処理に失敗しました:', error)
-        }
-    }
+        },
 
-    const markAllAsRead = async () => {
-        try {
-            await axios.post('/api/notifications/mark-all-read')
-            notifications.value.forEach(notification => {
-                notification.is_read = true
-            })
-            unreadCount.value = 0
-        } catch (error) {
-            console.error('全既読処理に失敗しました:', error)
-        }
-    }
+        async markAsRead(notificationId) {
+            try {
+                await axios.put(`/api/notifications/${notificationId}/read`)
+                const notification = this.notifications.find(n => n.id === notificationId)
+                if (notification && !notification.is_read) {
+                    notification.is_read = true
+                    this.unreadCount--
+                }
+            } catch (error) {
+                this.error = error.response?.data?.message || '通知の既読処理に失敗しました'
+                throw error
+            }
+        },
 
-    return {
-        notifications,
-        unreadCount,
-        loading,
-        fetchNotifications,
-        markAsRead,
-        markAllAsRead
+        async markAllAsRead() {
+            try {
+                await axios.post('/api/notifications/mark-all-read')
+                this.notifications.forEach(notification => {
+                    notification.is_read = true
+                })
+                this.unreadCount = 0
+            } catch (error) {
+                this.error = error.response?.data?.message || '全既読処理に失敗しました'
+                throw error
+            }
+        },
+
+        clearError() {
+            this.error = null
+        }
     }
 })
