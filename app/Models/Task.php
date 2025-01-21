@@ -56,4 +56,20 @@ class Task extends Model
 
         return $query->orderBy('sort_order');
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    // タスクの期限が近づいているかをチェックするヘルパーメソッド
+    public function shouldNotify(int $daysBeforeDue): bool
+    {
+        if (!$this->due_date) {
+            return false;
+        }
+
+        $daysUntilDue = now()->startOfDay()->diffInDays($this->due_date, false);
+        return $daysUntilDue === $daysBeforeDue;
+    }
 }

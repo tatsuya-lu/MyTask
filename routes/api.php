@@ -8,6 +8,8 @@ use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\DueDateFilterController;
+use App\Http\Controllers\NotificationSettingController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +55,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{task}/archive', [TaskController::class, 'archive'])
             ->name('tasks.archive');
     });
+
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])
+            ->name('notifications.index');
+        Route::put('/{notification}/read', [NotificationController::class, 'markAsRead'])
+            ->name('notifications.markAsRead');
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])
+            ->name('notifications.markAllAsRead');
+    });
+
+    // 通知設定関連のルート
+    Route::get('/notification-settings', [NotificationSettingController::class, 'show']);
+    Route::put('/notification-settings', [NotificationSettingController::class, 'update']);
 
     // タグ関連
     // Route::apiResource('tags', TagController::class);

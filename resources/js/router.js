@@ -11,6 +11,8 @@ import TeamList from '@/components/Teams/TeamList.vue'
 import TeamDetail from '@/components/Teams/TeamDetail.vue'
 import TeamTasks from '@/components/Teams/TeamTasks.vue'
 import TeamSettings from '@/components/Teams/TeamSettings.vue'
+import NotificationList from '@/components/Notification/NotificationList.vue'
+import NotificationSettings from '@/components/Settings/NotificationSettings.vue'
 
 
 const routes = [
@@ -68,6 +70,19 @@ const routes = [
         path: '/calendar',
         name: 'calendar',
         component: () => import('./components/Tasks/TaskCalendar.vue'),
+        meta: { requiresAuth: true }
+    },
+    // 通知関連ルート
+    {
+        path: '/notifications',
+        name: 'notifications',
+        component: NotificationList,
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/settings/notifications',
+        name: 'notification-settings',
+        component: NotificationSettings,
         meta: { requiresAuth: true }
     },
     // チーム関連ルート

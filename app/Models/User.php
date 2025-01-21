@@ -100,4 +100,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(DueDateFilter::class);
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function notificationSetting()
+    {
+        return $this->hasOne(NotificationSetting::class);
+    }
 }
