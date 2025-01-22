@@ -37,7 +37,7 @@ class TaskDueNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Task Due Notification',
+            subject: "タスク「{$this->task->title}」の期限が近づいています"
         );
     }
 
@@ -47,7 +47,11 @@ class TaskDueNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            markdown: 'emails.tasks.due-notification',
+            with: [
+                'task' => $this->task,
+                'daysUntilDue' => $this->daysUntilDue,
+            ]
         );
     }
 

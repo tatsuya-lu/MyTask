@@ -37,6 +37,12 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withSchedule(function (Schedule $schedule) {
+        $schedule->command('tasks:check-due-dates')->dailyAt('00:00');
+
+        $schedule->command('notifications:cleanup')->daily()->at('03:00');
+
         $schedule->command('tasks:check-due-dates')->dailyAt('09:00');
+        $schedule->command('tasks:check-due-dates')->dailyAt('12:00');
+        $schedule->command('tasks:check-due-dates')->dailyAt('21:00');
     })
     ->create();

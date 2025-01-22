@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Carbon\Carbon;
 use App\Models\NotificationSetting;
 use App\Models\Notification;
+use Illuminate\Support\Facades\Log;
 
 class CheckTaskDueDates extends Command
 {
@@ -49,25 +50,34 @@ class CheckTaskDueDates extends Command
     }
 
     private function processTask($task)
-    {
-        $dueDate = Carbon::parse($task->due_date);
-        $daysUntilDue = Carbon::now()->startOfDay()->diffInDays($dueDate, false);
+{
+    $dueDate = Carbon::parse($task->due_date);
+    $now = Carbon::now()->startOfDay();
+    $daysUntilDue = $now->diffInDays($dueDate, false);
 
-        if ($daysUntilDue < 0) {
-            return;
-        }
+    \Log::info('Processing task', [
+        'task_id' => $task->id,
+        'due_date' => $task->due_date,
+        'days_until_due' => $daysUntilDue,
+        'notification_timing' => $task->user->notificationSetting->notification_timing ?? [1, 3, 7]
+    ]);
 
+    // 期限日を含めて通知を処理
+    if ($daysUntilDue >= 0) {
         $notificationTiming = $task->user->notificationSetting->notification_timing ?? [1, 3, 7];
 
-        if (in_array($daysUntilDue, $notificationTiming)) {
+        // 当日の通知も含める
+        if (in_array($daysUntilDue, array_merge([0], $notificationTiming))) {
             $existingNotification = Notification::where('task_id', $task->id)
                 ->where('type', 'task_due')
-                ->whereDate('created_at', now()->toDateString())
+                ->whereDate('created_at', $now->toDateString())
                 ->exists();
 
             if (!$existingNotification) {
                 SendTaskDueNotification::dispatch($task, $daysUntilDue);
+                $this->info("Notification dispatched for task {$task->id} ({$daysUntilDue} days until due)");
             }
         }
     }
+}
 }

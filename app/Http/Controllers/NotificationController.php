@@ -4,15 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class NotificationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = $request->query('per_page', 10);
+
         $notifications = auth()->user()->notifications()
             ->latest()
-            ->take(10)
-            ->get();
+            ->paginate($perPage);
 
         $unreadCount = auth()->user()->notifications()
             ->where('is_read', false)
