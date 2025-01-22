@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useAuthStore } from '@/stores/auth'
 
 export const useNotificationStore = defineStore('notification', {
     state: () => ({
@@ -19,17 +20,27 @@ export const useNotificationStore = defineStore('notification', {
         async fetchNotifications() {
             this.loading = true
             try {
-                const token = localStorage.getItem('token')
-                if (token) {
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+                const authStore = useAuthStore()
+                if (!authStore.isAuthenticated) {
+                    throw new Error('認証が必要です')
                 }
 
-                const response = await axios.get('/api/notifications')
-                this.notifications = response.data.notifications
-                this.unreadCount = response.data.unread_count
+                const response = await axios.get('/api/notifications', {
+                    headers: {
+                        'Authorization': `Bearer ${authStore.token}`
+                    }
+                })
+
+                this.notifications = response.data.notifications.data || []
+                this.unreadCount = response.data.unread_count || 0
+                this.error = null
             } catch (error) {
-                this.error = error.response?.data?.message || '通知の取得に失敗しました'
-                throw error
+                console.error('Notification fetch error:', error);
+                this.notifications = [];
+                this.unreadCount = 0;
+                this.error = error.response?.status === 401
+                    ? '認証が必要です。再度ログインしてください。'
+                    : error.response?.data?.message || '通知の取得に失敗しました';
             } finally {
                 this.loading = false
             }
