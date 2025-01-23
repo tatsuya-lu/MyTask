@@ -3,42 +3,38 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Requests\DueDateFilterRequest;
 use App\Models\DueDateFilter;
+use App\Services\DueDateFilterService;
 
 class DueDateFilterController extends Controller
 {
+    protected $dueDateFilterService;
+
+    public function __construct(DueDateFilterService $dueDateFilterService)
+    {
+        $this->dueDateFilterService = $dueDateFilterService;
+    }
+
     public function index()
     {
-        $filters = DueDateFilter::where('user_id', auth()->id())
-            ->orderBy('created_at', 'desc')
-            ->get();
-
+        $filters = $this->dueDateFilterService->getAllUserFilters();
         return response()->json($filters);
     }
 
-    public function store(Request $request)
+    public function store(DueDateFilterRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'duration_value' => 'required|integer|min:1',
-            'duration_unit' => 'required|in:day,week,month'
-        ]);
-
-        $filter = DueDateFilter::create([
-            'user_id' => auth()->id(),
-            ...$validated
-        ]);
-
+        $filter = $this->dueDateFilterService->createFilter($request->validated());
         return response()->json($filter);
     }
 
     public function destroy(DueDateFilter $dueDateFilter)
     {
-        if ($dueDateFilter->user_id !== auth()->id()) {
-            return response()->json(['message' => '権限がありません'], 403);
+        try {
+            $this->dueDateFilterService->deleteFilter($dueDateFilter);
+            return response()->json(['message' => 'フィルターを削除しました']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 403);
         }
-
-        $dueDateFilter->delete();
-        return response()->json(['message' => 'フィルターを削除しました']);
     }
 }
