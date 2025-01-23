@@ -3,38 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Services\AuthService;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use App\Models\User;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    private $authService;
+
+    public function __construct(AuthService $authService)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|unique:users',
-            'password' => 'required|string|min:8|confirmed'
-        ]);
+        $this->authService = $authService;
+    }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password)
-        ]);
-
+    public function register(RegisterRequest $request)
+    {
+        $user = $this->authService->registerUser($request->validated());
         return response()->json(['user' => $user], 201);
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
-
         if (!Auth::attempt($request->only('email', 'password'))) {
             throw ValidationException::withMessages([
                 'email' => ['ログイン情報が一致しません']
@@ -42,15 +35,17 @@ class AuthController extends Controller
         }
 
         $user = $request->user();
+        $token = $this->authService->createLoginToken($user);
+
         return response()->json([
             'user' => $user,
-            'token' => $user->createToken('login_token')->plainTextToken
+            'token' => $token->plainTextToken
         ]);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $this->authService->logout($request->user());
         return response()->json(['message' => 'ログアウトしました']);
     }
 
