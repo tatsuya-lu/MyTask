@@ -7,15 +7,19 @@ use App\Http\Requests\TaskRequest;
 use App\Models\Task;
 use App\Services\TaskService;
 use App\Http\Resources\TaskResource;
-use App\Models\Notification;
+use App\Enums\TaskStatus;
+use App\Services\TaskNotificationService;
 
 class TaskController extends Controller
 {
     protected $taskService;
+    protected $taskNotificationService;
 
-    public function __construct(TaskService $taskService)
+
+    public function __construct(TaskService $taskService, TaskNotificationService $taskNotificationService)
     {
         $this->taskService = $taskService;
+        $this->taskNotificationService = $taskNotificationService;
     }
 
     public function index(Request $request)
@@ -69,10 +73,7 @@ class TaskController extends Controller
         $task->update(['is_archived' => true]);
 
         // アーカイブ時に未送信の期限通知をキャンセル
-        Notification::where('task_id', $task->id)
-            ->where('type', 'task_due')
-            ->whereDate('created_at', '>=', now()->toDateString())
-            ->delete();
+        $this->taskNotificationService->cancelDueNotifications($task);
 
         return response()->json(['message' => 'タスクをアーカイブしました']);
     }
@@ -103,10 +104,7 @@ class TaskController extends Controller
 
         // タスクが完了状態になった場合、未送信の期限通知をキャンセル
         if (!$wasCompleted && $isNowCompleted) {
-            Notification::where('task_id', $task->id)
-                ->where('type', 'task_due')
-                ->whereDate('created_at', '>=', now()->toDateString())
-                ->delete();
+            $this->taskNotificationService->cancelDueNotifications($task);
         }
 
         return new TaskResource($task);

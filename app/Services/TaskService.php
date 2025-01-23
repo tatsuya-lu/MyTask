@@ -96,7 +96,6 @@ class TaskService
             ->first();
 
         if ($userOrder && !empty($userOrder->task_order) && empty($filters['start_date']) && empty($filters['end_date'])) {
-            // CASEステートメントを構築
             $cases = [];
             foreach ($userOrder->task_order as $index => $id) {
                 $cases[] = "WHEN id = {$id} THEN {$index}";
@@ -108,7 +107,6 @@ class TaskService
             }
         }
 
-        // デフォルトの並び順
         return $query->orderBy('created_at', 'desc');
     }
 
