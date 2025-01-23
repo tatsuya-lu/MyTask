@@ -20,7 +20,7 @@
 
                         <div v-if="showNotifications"
                             class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg overflow-hidden z-50">
-                            <div class="py-2">
+                            <!-- <div class="py-2">
                                 <div v-if="notificationStore.loading" class="px-4 py-2 text-sm text-gray-500">
                                     読み込み中...
                                 </div>
@@ -47,6 +47,30 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div> -->
+                            <div class="py-2">
+                                <div v-if="notificationStore.loading" class="px-4 py-2 text-sm text-gray-500">
+                                    読み込み中...
+                                </div>
+                                <div v-else-if="notificationStore.error" class="px-4 py-2 text-sm text-red-500">
+                                    {{ notificationStore.error }}
+                                </div>
+                                <div v-else-if="!notificationStore.notifications?.length"
+                                    class="px-4 py-2 text-sm text-gray-500">
+                                    通知はありません
+                                </div>
+                                <template v-else>
+                                    <div v-for="notification in notificationStore.notifications" :key="notification.id"
+                                        class="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                        @click="notificationStore.markAsRead(notification.id)">
+                                        <div class="text-sm">
+                                            {{ notification.title }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            {{ notification.content }}
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                             <div class="border-t border-gray-200">
                                 <router-link :to="{ name: 'notifications' }"
@@ -56,6 +80,7 @@
                             </div>
                         </div>
                     </div>
+
                     <router-link :to="{ name: 'notification-settings' }"
                         class="px-4 py-2 text-sm font-medium text-white bg-green-200 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         通知設定
