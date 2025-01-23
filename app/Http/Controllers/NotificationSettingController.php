@@ -2,33 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\NotificationSetting;
-use Illuminate\Http\Request;
+use App\Http\Requests\NotificationSettingRequest;
+use App\Services\NotificationSettingService;
 
 class NotificationSettingController extends Controller
 {
+    protected $notificationSettingService;
+
+    public function __construct(NotificationSettingService $notificationSettingService)
+    {
+        $this->notificationSettingService = $notificationSettingService;
+    }
+
     public function show()
     {
-        $settings = auth()->user()->notificationSetting ?? 
-            NotificationSetting::create([
-                'user_id' => auth()->id(),
-                'notification_timing' => [1, 3, 7]
-            ]);
-
+        $settings = $this->notificationSettingService->getUserNotificationSettings();
         return response()->json($settings);
     }
 
-    public function update(Request $request)
+    public function update(NotificationSettingRequest $request)
     {
-        $validated = $request->validate([
-            'email_notifications_enabled' => 'required|boolean',
-            'in_app_notifications_enabled' => 'required|boolean',
-            'notification_timing' => 'required|array',
-            'notification_timing.*' => 'integer|min:0|max:30'
-        ]);
-
-        $settings = auth()->user()->notificationSetting;
-        $settings->update($validated);
+        $settings = $this->notificationSettingService->updateNotificationSettings(
+            $request->validated()
+        );
 
         return response()->json($settings);
     }
