@@ -63,48 +63,47 @@ class CheckTaskDueDates extends Command
 
             $notificationTiming = $task->user->notificationSetting->notification_timing ?? [14];
 
-            Log::info('Processing task', [
+            Log::info('Processing task details', [
                 'task_id' => $task->id,
                 'task_title' => $task->title,
                 'due_date' => $task->due_date,
                 'days_until_due' => $daysUntilDue,
-                'notification_timing' => $notificationTiming
+                'notification_timing' => $notificationTiming,
+                'exact_days' => $daysUntilDue,
+                'timing_check' => in_array($daysUntilDue, $notificationTiming)
             ]);
 
-            // 期限日までの日数が通知タイミングに一致するか確認
-            foreach ($notificationTiming as $timing) {
-                if ($daysUntilDue === (int)$timing) {
-                    // 同じ日に同じタスクの通知が作成されていないか確認
-                    $existingNotification = Notification::where('task_id', $task->id)
-                        ->where('type', 'task_due')
-                        ->whereDate('created_at', $now)
-                        ->exists();
+            if (in_array($daysUntilDue, $notificationTiming)) {
+                // 同じ日の通知がないか確認
+                $existingNotification = Notification::where('task_id', $task->id)
+                    ->where('type', 'task_due')
+                    ->whereDate('created_at', $now)
+                    ->exists();
 
-                    if (!$existingNotification) {
-                        SendTaskDueNotification::dispatch($task, $daysUntilDue)
-                            ->onQueue('notifications');
+                Log::info('Notification check', [
+                    'task_id' => $task->id,
+                    'existing_notification' => $existingNotification
+                ]);
 
-                        Log::info('Notification queued', [
-                            'task_id' => $task->id,
-                            'task_title' => $task->title,
-                            'days_until_due' => $daysUntilDue,
-                            'timing' => $timing
-                        ]);
+                if (!$existingNotification) {
+                    // 通知を同期的に作成（テスト用）
+                    // キューを使用する場合は dispatch() に変更
+                    SendTaskDueNotification::dispatchSync($task, $daysUntilDue);
 
-                        $this->info("Notification queued for task {$task->id}: {$task->title} ({$daysUntilDue} days until due)");
-                    } else {
-                        Log::info('Notification already exists', [
-                            'task_id' => $task->id,
-                            'date' => $now->toDateString()
-                        ]);
-                    }
-                    break;
+                    Log::info('Notification created', [
+                        'task_id' => $task->id,
+                        'task_title' => $task->title,
+                        'days_until_due' => $daysUntilDue
+                    ]);
+
+                    $this->info("Notification created for task {$task->id}: {$task->title}");
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Error processing task', [
+            Log::error('Error in processTask', [
                 'task_id' => $task->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }
