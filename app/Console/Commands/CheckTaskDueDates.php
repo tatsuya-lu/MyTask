@@ -86,9 +86,8 @@ class CheckTaskDueDates extends Command
                 ]);
 
                 if (!$existingNotification) {
-                    // 通知を同期的に作成（テスト用）
-                    // キューを使用する場合は dispatch() に変更
-                    SendTaskDueNotification::dispatchSync($task, $daysUntilDue);
+                    // 通知を非同期的に作成
+                    SendTaskDueNotification::dispatch($task, $daysUntilDue);
 
                     Log::info('Notification created', [
                         'task_id' => $task->id,
