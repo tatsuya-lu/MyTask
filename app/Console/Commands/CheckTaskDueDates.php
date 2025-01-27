@@ -31,6 +31,8 @@ class CheckTaskDueDates extends Command
      */
     public function handle()
     {
+        Log::info('Starting tasks:check-due-dates command');
+
         $maxDays = collect(NotificationSetting::select('notification_timing')
             ->get()
             ->pluck('notification_timing'))
@@ -41,43 +43,69 @@ class CheckTaskDueDates extends Command
             ->whereNotNull('due_date')
             ->where('status', '!=', 'completed')
             ->where('is_archived', false)
+            ->where('due_date', '>', now())
             ->where('due_date', '<=', now()->addDays($maxDays))
             ->chunk(100, function ($tasks) {
                 foreach ($tasks as $task) {
                     $this->processTask($task);
                 }
             });
+
+        Log::info('Completed tasks:check-due-dates command');
     }
 
     private function processTask($task)
-{
-    $dueDate = Carbon::parse($task->due_date);
-    $now = Carbon::now()->startOfDay();
-    $daysUntilDue = $now->diffInDays($dueDate, false);
+    {
+        try {
+            $dueDate = Carbon::parse($task->due_date)->startOfDay();
+            $now = Carbon::now()->startOfDay();
+            $daysUntilDue = $now->diffInDays($dueDate, false);
 
-    \Log::info('Processing task', [
-        'task_id' => $task->id,
-        'due_date' => $task->due_date,
-        'days_until_due' => $daysUntilDue,
-        'notification_timing' => $task->user->notificationSetting->notification_timing ?? [1, 3, 7]
-    ]);
+            $notificationTiming = $task->user->notificationSetting->notification_timing ?? [14];
 
-    // 期限日を含めて通知を処理
-    if ($daysUntilDue >= 0) {
-        $notificationTiming = $task->user->notificationSetting->notification_timing ?? [1, 3, 7];
+            Log::info('Processing task', [
+                'task_id' => $task->id,
+                'task_title' => $task->title,
+                'due_date' => $task->due_date,
+                'days_until_due' => $daysUntilDue,
+                'notification_timing' => $notificationTiming
+            ]);
 
-        // 当日の通知も含める
-        if (in_array($daysUntilDue, array_merge([0], $notificationTiming))) {
-            $existingNotification = Notification::where('task_id', $task->id)
-                ->where('type', 'task_due')
-                ->whereDate('created_at', $now->toDateString())
-                ->exists();
+            // 期限日までの日数が通知タイミングに一致するか確認
+            foreach ($notificationTiming as $timing) {
+                if ($daysUntilDue === (int)$timing) {
+                    // 同じ日に同じタスクの通知が作成されていないか確認
+                    $existingNotification = Notification::where('task_id', $task->id)
+                        ->where('type', 'task_due')
+                        ->whereDate('created_at', $now)
+                        ->exists();
 
-            if (!$existingNotification) {
-                SendTaskDueNotification::dispatch($task, $daysUntilDue);
-                $this->info("Notification dispatched for task {$task->id} ({$daysUntilDue} days until due)");
+                    if (!$existingNotification) {
+                        SendTaskDueNotification::dispatch($task, $daysUntilDue)
+                            ->onQueue('notifications');
+
+                        Log::info('Notification queued', [
+                            'task_id' => $task->id,
+                            'task_title' => $task->title,
+                            'days_until_due' => $daysUntilDue,
+                            'timing' => $timing
+                        ]);
+
+                        $this->info("Notification queued for task {$task->id}: {$task->title} ({$daysUntilDue} days until due)");
+                    } else {
+                        Log::info('Notification already exists', [
+                            'task_id' => $task->id,
+                            'date' => $now->toDateString()
+                        ]);
+                    }
+                    break;
+                }
             }
+        } catch (\Exception $e) {
+            Log::error('Error processing task', [
+                'task_id' => $task->id,
+                'error' => $e->getMessage()
+            ]);
         }
     }
-}
 }
