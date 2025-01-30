@@ -37,12 +37,18 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withSchedule(function (Schedule $schedule) {
-        $schedule->command('tasks:check-due-dates')->dailyAt('00:00');
-
-        $schedule->command('notifications:cleanup')->daily()->at('03:00');
-
-        $schedule->command('tasks:check-due-dates')->dailyAt('09:00');
-        $schedule->command('tasks:check-due-dates')->dailyAt('12:00');
-        $schedule->command('tasks:check-due-dates')->dailyAt('21:00');
+        // UTCにしてしまっているため、以下の処理1時間おきに実行
+        // ->hourlyAt(0)で毎時0分を指定
+        // ->when()で3時間おきの条件を追加
+        // 修正範囲を確認後、日本時間JSTに修正予定
+        $schedule->command('tasks:check-due-dates')
+            ->hourlyAt(0)
+            ->when(function () {
+                $hour = (int) now()->format('H');
+                return $hour % 1 === 0;
+            });
+            
+        // 古い通知のクリーンアップ（UTC 03:00 = JST 12:00）
+        $schedule->command('notifications:cleanup')->dailyAt('03:00');
     })
     ->create();
