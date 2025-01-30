@@ -13,7 +13,7 @@ export const useTagStore = defineStore('tag', {
             this.isLoading = true;
             try {
                 const response = await axios.get('/api/tags');
-                console.log('タグレスポンス:', response.data);  // レスポンスの中身を確認
+                console.log('タグレスポンス:', response.data);
                 this.tags = response.data;
             } catch (error) {
                 console.error('タグ取得エラー:', error);
@@ -42,7 +42,7 @@ export const useTagStore = defineStore('tag', {
         async updateTag(tagId, tagData) {
             this.isLoading = true;
             try {
-                const response = await axios.put(`/tags/${tagId}`, tagData);
+                const response = await axios.put(`/api/tags/${tagId}`, tagData);
                 const index = this.tags.findIndex(tag => tag.id === tagId);
                 if (index !== -1) {
                     this.tags[index] = response.data;
@@ -59,7 +59,7 @@ export const useTagStore = defineStore('tag', {
         async deleteTag(tagId) {
             this.isLoading = true;
             try {
-                await axios.delete(`/tags/${tagId}`);
+                await axios.delete(`/api/tags/${tagId}`);
                 this.tags = this.tags.filter(tag => tag.id !== tagId);
             } catch (error) {
                 this.error = error.response?.data?.message || 'タグの削除に失敗しました';
