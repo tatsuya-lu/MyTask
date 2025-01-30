@@ -46,7 +46,7 @@
                 </div>
 
                 <!-- 保存済み並び順の選択（カスタムドロップダウン） -->
-                <div class="relative z-50" id="order-dropdown">
+                <div class="relative" id="order-dropdown">
                     <button @click="toggleOrderDropdown"
                         class="border rounded-md py-2 px-3 text-gray-700 bg-white flex items-center justify-between min-w-[200px]">
                         <span>{{ selectedOrderName || '保存済みの並び順' }}</span>
