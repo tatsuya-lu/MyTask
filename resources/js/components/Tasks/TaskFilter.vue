@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
     <div class="bg-white p-4 rounded-lg shadow mb-4">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -70,4 +70,4 @@ defineEmits([
     'update:tag',
     'update:search'
 ]);
-</script>
+</script> -->

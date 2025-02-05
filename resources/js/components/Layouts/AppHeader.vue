@@ -20,34 +20,6 @@
 
                         <div v-if="showNotifications"
                             class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg overflow-hidden z-50">
-                            <!-- <div class="py-2">
-                                <div v-if="notificationStore.loading" class="px-4 py-2 text-sm text-gray-500">
-                                    読み込み中...
-                                </div>
-                                <div v-else-if="notificationStore.error" class="px-4 py-2 text-sm text-red-500">
-                                    {{ notificationStore.error }}
-                                </div>
-                                <div v-else-if="!notificationStore.notifications?.length"
-                                    class="px-4 py-2 text-sm text-gray-500">
-                                    通知はありません
-                                </div>
-                                <div v-else v-for="notification in notificationStore.notifications"
-                                    :key="notification?.id" class="px-4 py-2 hover:bg-gray-100"
-                                    @click="notificationStore.markAsRead(notification.id)">
-                                    <div class="flex items-center">
-                                        <div class="flex-1">
-                                            <p class="text-sm font-medium text-gray-900">
-                                                {{ notification.title }}
-                                            </p>
-                                            <p class="text-sm text-gray-500">
-                                                {{ notification.content }}
-                                            </p>
-                                        </div>
-                                        <div v-if="!notification.is_read" class="ml-2 w-2 h-2 bg-blue-600 rounded-full">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> -->
                             <div class="py-2">
                                 <div v-if="notificationStore.loading" class="px-4 py-2 text-sm text-gray-500">
                                     読み込み中...

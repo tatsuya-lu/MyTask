@@ -264,7 +264,6 @@ const getMonthDates = (year, month) => {
     return dates
 }
 
-// モーダル関連の関数
 const openTaskModal = (taskId) => {
     selectedTaskId.value = taskId
     showTaskModal.value = true
@@ -280,7 +279,6 @@ const handleTaskSaved = async () => {
     closeTaskModal()
 }
 
-// ナビゲーション関連の関数
 const previousMonth = () => {
     currentDate.value = new Date(
         currentDate.value.getFullYear(),
@@ -312,7 +310,6 @@ const switchToMonth = (year, month) => {
     currentView.value = 'month'
 }
 
-// ユーティリティ関数
 const isCurrentMonth = (date) => {
     return date.getMonth() === currentDate.value.getMonth()
 }

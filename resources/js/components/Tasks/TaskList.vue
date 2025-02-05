@@ -272,10 +272,11 @@ const togglePagination = async () => {
 };
 
 const selectedOrderId = ref('');
-
 const sortType = ref('');
 
-// ドラッグ&ドロップ終了時の処理
+/**
+ * ドラッグ&ドロップ後のタスク並び順を更新する
+ */
 const handleDragEnd = async (event) => {
     if (event.oldIndex === event.newIndex) return;
 
@@ -291,20 +292,17 @@ const handleDragEnd = async (event) => {
     }
 };
 
-// ソート処理
 const handleSort = async () => {
     if (sortType.value) {
         await taskStore.applySort(sortType.value);
     }
 };
 
-// フィルター状態
 const selectedStatus = ref('');
 const selectedPriority = ref('');
 const selectedTagId = ref('');
 const searchQuery = ref('');
 
-// 検索とフィルターのハンドラー
 const handleSearch = () => {
     taskStore.setFilter('searchQuery', searchQuery.value);
 };
@@ -318,7 +316,6 @@ const openCreateFilterModal = () => {
 };
 
 const handleFilterCreated = () => {
-    // 必要に応じてフィルターリストを更新
 };
 
 const confirmDeleteFilter = async (filter) => {
@@ -342,7 +339,6 @@ const handleFilterChange = () => {
     taskStore.setFilter('dueDateFilter', selectedDueDateFilter.value);
 };
 
-// 保存済み並び順の選択
 const handleSavedOrderSelect = async () => {
     if (!selectedOrderId.value) return;
 
@@ -356,13 +352,12 @@ const handleSavedOrderSelect = async () => {
     }
 };
 
-// 現在の並び順を保存
 const handleSaveOrder = async () => {
     const name = prompt('並び順の名前を入力してください（省略可）:');
-    if (name === null) return; // キャンセル時
+    if (name === null) return;
 
     const description = prompt('説明を入力してください（省略可）:');
-    if (description === null) return; // キャンセル時
+    if (description === null) return;
 
     try {
         await taskStore.saveTaskOrder(
@@ -382,19 +377,16 @@ const selectedOrderName = computed(() => {
     return order ? (order.name || order.created_at) : '';
 });
 
-// ドロップダウンの表示/非表示を切り替え
 const toggleOrderDropdown = () => {
     isOrderDropdownOpen.value = !isOrderDropdownOpen.value;
 };
 
-// 並び順の選択
 const selectOrder = async (order) => {
     selectedOrderId.value = order.id;
     await handleSavedOrderSelect();
     isOrderDropdownOpen.value = false;
 };
 
-// 削除の確認と実行
 const confirmDeleteOrder = async (order) => {
     const message = order.name
         ? `並び順「${order.name}」を削除してもよろしいですか？`
@@ -413,7 +405,6 @@ const confirmDeleteOrder = async (order) => {
     }
 };
 
-// クリックイベントのハンドラーを追加
 onMounted(() => {
     document.addEventListener('click', (event) => {
         const dropdown = document.getElementById('order-dropdown');

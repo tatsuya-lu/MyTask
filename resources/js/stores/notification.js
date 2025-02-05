@@ -1,5 +1,6 @@
-import { defineStore } from 'pinia'
-import { useAuthStore } from '@/stores/auth'
+import { defineStore } from 'pinia';
+import axios from 'axios';
+import { useAuthStore } from '@/stores/auth';
 
 export const useNotificationStore = defineStore('notification', {
     state: () => ({
@@ -12,28 +13,28 @@ export const useNotificationStore = defineStore('notification', {
     getters: {
         hasUnreadNotifications: (state) => state.unreadCount > 0,
         sortedNotifications: (state) => [...state.notifications].sort((a, b) => {
-            return new Date(b.created_at) - new Date(a.created_at)
+            return new Date(b.created_at) - new Date(a.created_at);
         })
     },
 
     actions: {
         async fetchNotifications() {
-            this.loading = true
+            this.loading = true;
             try {
-                const authStore = useAuthStore()
+                const authStore = useAuthStore();
                 if (!authStore.isAuthenticated) {
-                    throw new Error('認証が必要です')
+                    throw new Error('認証が必要です');
                 }
 
                 const response = await axios.get('/api/notifications', {
                     headers: {
                         'Authorization': `Bearer ${authStore.token}`
                     }
-                })
+                });
 
-                this.notifications = response.data.notifications.data || []
-                this.unreadCount = response.data.unread_count || 0
-                this.error = null
+                this.notifications = response.data.notifications.data || [];
+                this.unreadCount = response.data.unread_count || 0;
+                this.error = null;
             } catch (error) {
                 console.error('Notification fetch error:', error);
                 this.notifications = [];
@@ -42,39 +43,39 @@ export const useNotificationStore = defineStore('notification', {
                     ? '認証が必要です。再度ログインしてください。'
                     : error.response?.data?.message || '通知の取得に失敗しました';
             } finally {
-                this.loading = false
+                this.loading = false;
             }
         },
 
         async markAsRead(notificationId) {
             try {
-                await axios.put(`/api/notifications/${notificationId}/read`)
-                const notification = this.notifications.find(n => n.id === notificationId)
+                await axios.put(`/api/notifications/${notificationId}/read`);
+                const notification = this.notifications.find(n => n.id === notificationId);
                 if (notification && !notification.is_read) {
-                    notification.is_read = true
-                    this.unreadCount--
+                    notification.is_read = true;
+                    this.unreadCount--;
                 }
             } catch (error) {
-                this.error = error.response?.data?.message || '通知の既読処理に失敗しました'
-                throw error
+                this.error = error.response?.data?.message || '通知の既読処理に失敗しました';
+                throw error;
             }
         },
 
         async markAllAsRead() {
             try {
-                await axios.post('/api/notifications/mark-all-read')
+                await axios.post('/api/notifications/mark-all-read');
                 this.notifications.forEach(notification => {
-                    notification.is_read = true
-                })
-                this.unreadCount = 0
+                    notification.is_read = true;
+                });
+                this.unreadCount = 0;
             } catch (error) {
-                this.error = error.response?.data?.message || '全既読処理に失敗しました'
-                throw error
+                this.error = error.response?.data?.message || '全既読処理に失敗しました';
+                throw error;
             }
         },
 
         clearError() {
-            this.error = null
+            this.error = null;
         }
     }
-})
+});

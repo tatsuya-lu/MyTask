@@ -1,4 +1,5 @@
-import { defineStore } from 'pinia'
+import { defineStore } from 'pinia';
+import axios from 'axios';
 
 export const useNotificationSettingsStore = defineStore('notificationSettings', {
     state: () => ({
@@ -20,28 +21,27 @@ export const useNotificationSettingsStore = defineStore('notificationSettings', 
 
     actions: {
         async fetchSettings() {
-            this.loading = true
+            this.loading = true;
             try {
-                const response = await axios.get('/api/notification-settings')
-                this.settings = response.data
+                const response = await axios.get('/api/notification-settings');
+                this.settings = response.data;
             } catch (error) {
-                this.error = error.response?.data?.message || '設定の取得に失敗しました'
-                throw error
+                this.error = error.response?.data?.message || '設定の取得に失敗しました';
+                throw error;
             } finally {
-                this.loading = false
+                this.loading = false;
             }
         },
 
         async saveSettings() {
-            this.saving = true
+            this.saving = true;
             try {
-                await axios.put('/api/notification-settings', this.settings)
-                return true
+                await axios.put('/api/notification-settings', this.settings);
             } catch (error) {
-                this.error = error.response?.data?.message || '設定の保存に失敗しました'
-                throw error
+                this.error = error.response?.data?.message || '設定の保存に失敗しました';
+                throw error;
             } finally {
-                this.saving = false
+                this.saving = false;
             }
         },
 
@@ -56,4 +56,4 @@ export const useNotificationSettingsStore = defineStore('notificationSettings', 
             this.error = null
         }
     }
-})
+});

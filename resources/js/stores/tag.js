@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { defineStore } from 'pinia'
+import { defineStore } from 'pinia';
 
 export const useTagStore = defineStore('tag', {
     state: () => ({
@@ -13,10 +13,8 @@ export const useTagStore = defineStore('tag', {
             this.isLoading = true;
             try {
                 const response = await axios.get('/api/tags');
-                console.log('タグレスポンス:', response.data);
                 this.tags = response.data;
             } catch (error) {
-                console.error('タグ取得エラー:', error);
                 this.error = error.response?.data?.message || 'タグの取得に失敗しました';
                 throw error;
             } finally {

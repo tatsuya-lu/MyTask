@@ -136,7 +136,6 @@ router.beforeEach(async (to, from, next) => {
         return;
     }
 
-    // 認証が必要なルート
     if (to.meta.requiresAuth) {
         if (!authStore.token) {
             next('/login');

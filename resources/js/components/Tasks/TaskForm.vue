@@ -164,20 +164,6 @@ const getDayClass = (date) => {
     return '';
 };
 
-const formatDate = (date) => {
-    if (!date) return '';
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
-    return `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, '0')}月${String(d.getDate()).padStart(2, '0')}日`;
-};
-
-const parseDate = (dateStr) => {
-    if (!dateStr) return null;
-    const parts = dateStr.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-    if (!parts) return null;
-    return new Date(parts[1], parts[2] - 1, parts[3]);
-};
-
 const form = ref({
     title: '',
     description: '',
@@ -297,9 +283,6 @@ const handleCancel = () => {
 }
 
 onMounted(async () => {
-    console.log('Mode:', props.isModal ? 'Modal' : 'Normal');
-    console.log('Initial Date:', props.initialDate);
-    console.log('Route params:', route.params);
     try {
         await tagStore.fetchTags();
     } catch (error) {
