@@ -1,102 +1,110 @@
 <template>
     <div class="container mx-auto px-4 py-8">
         <!-- ヘッダー部分 -->
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold">タスク一覧</h1>
-            <div class="flex gap-2">
+        <div class="space-y-4 mb-6">
+            <!-- タイトルと新規タスクボタン -->
+            <div class="flex flex-wrap justify-between items-center gap-4">
+                <h1 class="text-2xl font-bold">タスク一覧</h1>
+                <router-link :to="{ name: 'task-create' }"
+                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 shrink-0">
+                    新規タスク
+                </router-link>
+            </div>
 
-                <!-- 表示設定ボタン -->
-                <button @click="isSettingsOpen = true"
-                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded flex items-center gap-2">
-                    <i class="fas fa-cog"></i>
-                    <span>表示設定</span>
-                </button>
-
-                <!-- ページネーション切り替えトグル -->
-                <div class="flex items-center mr-4">
-                    <span class="mr-3 text-sm font-medium text-gray-700">
-                        ページネーション
-                    </span>
-                    <button type="button" role="switch" :aria-checked="taskStore.pagination.enabled"
-                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        :class="taskStore.pagination.enabled ? 'bg-blue-500' : 'bg-gray-200'" @click="togglePagination">
-                        <span class="sr-only">ページネーションの切り替え</span>
-                        <span aria-hidden="true"
-                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                            :class="taskStore.pagination.enabled ? 'translate-x-5' : 'translate-x-0'">
-                        </span>
-                    </button>
-                </div>
-
-                <!-- 表示切り替えボタン -->
-                <div class="flex items-center">
-                    <span class="mr-3 text-sm font-medium text-gray-700">
-                        カード表示
-                    </span>
-                    <button type="button" role="switch" :aria-checked="taskStore.viewMode === 'card'"
-                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        :class="taskStore.viewMode === 'card' ? 'bg-blue-500' : 'bg-gray-200'" @click="toggleView"
-                        @keydown.space.prevent="toggleView">
-                        <span class="sr-only">カード表示の切り替え</span>
-                        <span aria-hidden="true"
-                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                            :class="taskStore.viewMode === 'card' ? 'translate-x-5' : 'translate-x-0'">
-                        </span>
-                    </button>
-                </div>
-
-                <!-- 保存済み並び順の選択（カスタムドロップダウン） -->
-                <div class="relative" id="order-dropdown">
-                    <button @click="toggleOrderDropdown"
-                        class="border rounded-md py-2 px-3 text-gray-700 bg-white flex items-center justify-between min-w-[200px]">
-                        <span>{{ selectedOrderName || '保存済みの並び順' }}</span>
-                        <i class="fas fa-chevron-down ml-2"></i>
+            <!-- コントロール類 -->
+            <div class="flex flex-wrap gap-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <button @click="isSettingsOpen = true"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded flex items-center gap-2 shrink-0">
+                        <i class="fas fa-cog"></i>
+                        <span>表示設定</span>
                     </button>
 
-                    <!-- ドロップダウンメニュー -->
-                    <div v-if="isOrderDropdownOpen"
-                        class="absolute w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto z-30">
-                        <div class="py-1">
-                            <div v-if="taskStore.savedOrders.length === 0" class="px-4 py-2 text-gray-500">
-                                保存された並び順はありません
-                            </div>
-                            <div v-else>
-                                <div v-for="order in taskStore.savedOrders" :key="order.id"
-                                    class="flex items-center justify-between px-4 py-2 hover:bg-gray-100">
-                                    <button @click="selectOrder(order)" class="flex-grow text-left">
-                                        {{ order.name || order.created_at }}
-                                        <span v-if="order.description" class="text-sm text-gray-500 block">
-                                            {{ order.description }}
-                                        </span>
-                                    </button>
-                                    <button @click.stop="confirmDeleteOrder(order)"
-                                        class="text-red-500 hover:text-red-700 px-2">
-                                        <span class="sr-only">削除</span>
-                                        ×
-                                    </button>
-                                </div>
-                            </div>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center shrink-0">
+                            <span class="mr-3 text-sm font-medium text-gray-700 whitespace-nowrap">
+                                ページネーション
+                            </span>
+                            <button type="button" role="switch" :aria-checked="taskStore.pagination.enabled"
+                                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                :class="taskStore.pagination.enabled ? 'bg-blue-500' : 'bg-gray-200'"
+                                @click="togglePagination">
+                                <span class="sr-only">ページネーションの切り替え</span>
+                                <span aria-hidden="true"
+                                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                    :class="taskStore.pagination.enabled ? 'translate-x-5' : 'translate-x-0'">
+                                </span>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center shrink-0">
+                            <span class="mr-3 text-sm font-medium text-gray-700 whitespace-nowrap">
+                                カード表示
+                            </span>
+                            <button type="button" role="switch" :aria-checked="taskStore.viewMode === 'card'"
+                                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                :class="taskStore.viewMode === 'card' ? 'bg-blue-500' : 'bg-gray-200'"
+                                @click="toggleView" 
+                                @keydown.space.prevent="toggleView">
+                                <span class="sr-only">カード表示の切り替え</span>
+                                <span aria-hidden="true"
+                                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                                    :class="taskStore.viewMode === 'card' ? 'translate-x-5' : 'translate-x-0'">
+                                </span>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 既存のソート選択 -->
-                <select v-model="sortType" @change="handleSort" class="border rounded-md py-2 px-3 text-gray-700">
-                    <option value="">並び順を選択</option>
-                    <option value="created_desc">作成日（新しい順）</option>
-                    <option value="due_date">期限日順</option>
-                </select>
+                <!-- 保存済み並び順の選択（カスタムドロップダウン） -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="relative" id="order-dropdown">
+                        <button @click="toggleOrderDropdown"
+                            class="border rounded-md py-2 px-3 text-gray-700 bg-white flex items-center justify-between w-[200px] shrink-0">
+                            <span class="truncate">{{ selectedOrderName || '保存済みの並び順' }}</span>
+                            <i class="fas fa-chevron-down ml-2"></i>
+                        </button>
 
-                <!-- 並び順の保存ボタン -->
-                <button v-if="taskStore.isCustomOrder" @click="handleSaveOrder"
-                    class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                    現在の並び順を保存
-                </button>
+                        <!-- ドロップダウンメニュー -->
+                        <div v-if="isOrderDropdownOpen"
+                            class="absolute w-full mt-1 bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto z-30">
+                            <div class="py-1">
+                                <div v-if="taskStore.savedOrders.length === 0" class="px-4 py-2 text-gray-500">
+                                    保存された並び順はありません
+                                </div>
+                                <div v-else>
+                                    <div v-for="order in taskStore.savedOrders" :key="order.id"
+                                        class="flex items-center justify-between px-4 py-2 hover:bg-gray-100">
+                                        <button @click="selectOrder(order)" class="flex-grow text-left">
+                                            {{ order.name || order.created_at }}
+                                            <span v-if="order.description" class="text-sm text-gray-500 block">
+                                                {{ order.description }}
+                                            </span>
+                                        </button>
+                                        <button @click.stop="confirmDeleteOrder(order)"
+                                            class="text-red-500 hover:text-red-700 px-2">
+                                            <span class="sr-only">削除</span>
+                                            ×
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                <router-link :to="{ name: 'task-create' }"
-                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                    新規タスク
-                </router-link>
+                    <!-- 既存のソート選択 -->
+                    <select v-model="sortType" @change="handleSort"
+                        class="border rounded-md py-2 px-3 text-gray-700 w-[200px] shrink-0">
+                        <option value="">並び順を選択</option>
+                        <option value="created_desc">作成日（新しい順）</option>
+                        <option value="due_date">期限日順</option>
+                    </select>
+
+                    <button v-if="taskStore.isCustomOrder" @click="handleSaveOrder"
+                        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 shrink-0">
+                        現在の並び順を保存
+                    </button>
+                </div>
             </div>
         </div>
 
