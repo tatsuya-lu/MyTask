@@ -5,7 +5,7 @@
                 {{ isEditing ? 'チームを編集' : '新規チーム作成' }}
             </h3>
 
-            <form @submit.prevent="handleSubmit">
+            <form @submit.prevent="handleSubmit" novalidate>
                 <!-- チーム名 -->
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="name">

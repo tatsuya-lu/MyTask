@@ -8,7 +8,7 @@
                 </button>
             </div>
 
-            <form @submit.prevent="handleSubmit">
+            <form @submit.prevent="handleSubmit" novalidate>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         フィルター名

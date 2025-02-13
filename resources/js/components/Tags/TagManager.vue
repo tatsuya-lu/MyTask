@@ -34,7 +34,7 @@
                 <h3 class="text-lg font-bold mb-4">
                     {{ showEditModal ? 'タグの編集' : '新規タグ作成' }}
                 </h3>
-                <form @submit.prevent="handleSubmit">
+                <form @submit.prevent="handleSubmit" novalidate>
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2">
                             タグ名

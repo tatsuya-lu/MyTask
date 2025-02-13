@@ -6,7 +6,7 @@
                     会員登録
                 </h2>
             </div>
-            <form class="mt-8 space-y-6" @submit.prevent="handleRegister">
+            <form class="mt-8 space-y-6" @submit.prevent="handleRegister" novalidate>
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div>
                         <input v-model="name" type="text" required

@@ -6,7 +6,7 @@
                     ログイン
                 </h2>
             </div>
-            <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
+            <form class="mt-8 space-y-6" @submit.prevent="handleLogin" novalidate>
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div>
                         <input v-model="email" type="email" required

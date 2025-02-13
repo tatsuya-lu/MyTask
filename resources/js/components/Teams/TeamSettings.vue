@@ -5,7 +5,7 @@
         <!-- チーム基本設定 -->
         <div class="mb-8">
             <h3 class="text-lg font-semibold mb-4">基本設定</h3>
-            <form @submit.prevent="updateTeam" class="space-y-4">
+            <form @submit.prevent="updateTeam" class="space-y-4" novalidate>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         チーム名*

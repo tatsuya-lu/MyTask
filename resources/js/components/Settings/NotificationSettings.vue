@@ -6,7 +6,7 @@
             <div class="spinner">読み込み中...</div>
         </div>
 
-        <form v-else @submit.prevent="saveSettings" class="space-y-6">
+        <form v-else @submit.prevent="saveSettings" class="space-y-6" novalidate>
             <!-- メール通知設定 -->
             <div class="bg-white p-6 rounded-lg shadow">
                 <h3 class="text-lg font-semibold mb-4">メール通知</h3>

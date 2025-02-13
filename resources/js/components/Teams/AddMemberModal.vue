@@ -5,7 +5,7 @@
                 メンバーを追加
             </h3>
 
-            <form @submit.prevent="handleSubmit">
+            <form @submit.prevent="handleSubmit" novalidate>
                 <!-- メールアドレスまたはユーザー検索 -->
                 <div class="mb-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2" for="user">
