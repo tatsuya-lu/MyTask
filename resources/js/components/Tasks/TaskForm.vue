@@ -296,11 +296,10 @@ onMounted(async () => {
             const response = await axios.get(`/api/tasks/${targetTaskId}`);
             const task = response.data.data;
 
-            // 日付の処理を修正
+
             let dueDate = null;
             if (task.due_date) {
-                const [year, month, day] = task.due_date.split('-');
-                dueDate = new Date(year, month - 1, day);
+                dueDate = new Date(task.due_date);
             }
 
             form.value = {
