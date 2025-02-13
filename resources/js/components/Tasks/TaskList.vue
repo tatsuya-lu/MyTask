@@ -49,7 +49,7 @@
                             <button @click="toggleOrderDropdown"
                                 class="border rounded-md py-2 px-3 text-gray-700 bg-white flex items-center justify-between w-full md:w-[200px] shrink-0">
                                 <span class="truncate">{{ selectedOrderName || '保存済みの並び順' }}</span>
-                                <i class="fas fa-chevron-down ml-2"></i>
+                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
                             </button>
 
                             <div v-if="isOrderDropdownOpen"
@@ -148,33 +148,38 @@
                         期限日
                     </label>
                     <div class="relative">
-                        <select v-model="selectedDueDateFilter"
-                            class="w-full border rounded-md py-2 px-3 text-gray-700 pr-20" @change="handleFilterChange">
-                            <option value="">すべて</option>
-                            <optgroup label="デフォルト">
-                                <option v-for="filter in dueDateFilterStore.defaultFilters" :key="filter.id"
-                                    :value="filter">
-                                    {{ filter.name }}
-                                </option>
-                            </optgroup>
-                            <optgroup label="カスタム" v-if="dueDateFilterStore.customFilters.length">
-                                <option v-for="filter in dueDateFilterStore.customFilters" :key="filter.id"
-                                    :value="filter">
-                                    {{ filter.name }}
+                        <div class="relative">
+                            <div class="absolute left-3 top-1/2 -translate-y-1/2 flex items-center">
+                                <button v-if="selectedDueDateFilter && !isDefaultFilter(selectedDueDateFilter)"
+                                    @click.stop="confirmDeleteFilter(selectedDueDateFilter)" type="button"
+                                    class="text-red-500 hover:text-red-700 transition-all duration-200 w-6"
+                                    title="フィルターを削除">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button @click="openCreateFilterModal" type="button"
+                                    class="text-blue-500 hover:text-blue-700 transition-all duration-200 w-6"
+                                    title="フィルターを追加">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
 
-                                </option>
-                            </optgroup>
-                        </select>
-                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-2">
-                            <button @click="openCreateFilterModal" type="button"
-                                class="text-blue-500 hover:text-blue-700" title="フィルターを追加">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                            <button v-if="selectedDueDateFilter && !isDefaultFilter(selectedDueDateFilter)"
-                                @click="confirmDeleteFilter(selectedDueDateFilter)" type="button"
-                                class="text-red-500 hover:text-red-700" title="フィルターを削除">
-                                <i class="fas fa-minus"></i>
-                            </button>
+                            <select v-model="selectedDueDateFilter"
+                                class="w-full border rounded-md py-2 pl-16 pr-4 text-gray-700"
+                                @change="handleFilterChange">
+                                <option value="">すべて</option>
+                                <optgroup label="デフォルト">
+                                    <option v-for="filter in dueDateFilterStore.defaultFilters" :key="filter.id"
+                                        :value="filter">
+                                        {{ filter.name }}
+                                    </option>
+                                </optgroup>
+                                <optgroup label="カスタム" v-if="dueDateFilterStore.customFilters.length">
+                                    <option v-for="filter in dueDateFilterStore.customFilters" :key="filter.id"
+                                        :value="filter">
+                                        {{ filter.name }}
+                                    </option>
+                                </optgroup>
+                            </select>
                         </div>
                     </div>
                 </div>
