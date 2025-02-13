@@ -31,32 +31,15 @@
                                 <span class="mr-3 text-sm font-medium text-gray-700 whitespace-nowrap">
                                     ページネーション
                                 </span>
-                                <button type="button" role="switch" :aria-checked="taskStore.pagination.enabled"
-                                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                                    :class="taskStore.pagination.enabled ? 'bg-blue-500' : 'bg-gray-200'"
-                                    @click="togglePagination">
-                                    <span class="sr-only">ページネーションの切り替え</span>
-                                    <span aria-hidden="true"
-                                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                                        :class="taskStore.pagination.enabled ? 'translate-x-5' : 'translate-x-0'">
-                                    </span>
-                                </button>
+                                <toggle-switch v-model="taskStore.pagination.enabled"
+                                    @update:modelValue="togglePagination" />
                             </div>
 
                             <div class="flex items-center shrink-0">
                                 <span class="mr-3 text-sm font-medium text-gray-700 whitespace-nowrap">
                                     カード表示
                                 </span>
-                                <button type="button" role="switch" :aria-checked="taskStore.viewMode === 'card'"
-                                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                                    :class="taskStore.viewMode === 'card' ? 'bg-blue-500' : 'bg-gray-200'"
-                                    @click="toggleView" @keydown.space.prevent="toggleView">
-                                    <span class="sr-only">カード表示の切り替え</span>
-                                    <span aria-hidden="true"
-                                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
-                                        :class="taskStore.viewMode === 'card' ? 'translate-x-5' : 'translate-x-0'">
-                                    </span>
-                                </button>
+                                <toggle-switch v-model="isCardView" @update:modelValue="toggleView" />
                             </div>
                         </div>
                     </div>
@@ -248,6 +231,7 @@ import CreateDueDateFilterModal from './CreateDueDateFilterModal.vue';
 import { useDueDateFilterStore } from '@/stores/dueDateFilter';
 import draggable from 'vuedraggable';
 import { useRouter } from 'vue-router';
+import ToggleSwitch from '@/components/Common/ToggleSwitch.vue';
 
 const router = useRouter();
 const taskStore = useTaskStore();
@@ -263,8 +247,21 @@ const selectedDueDateFilter = ref(null);
 const isCreateFilterModalOpen = ref(false);
 const isControlsVisible = ref(false);
 
+const isCardView = computed({
+    get: () => taskStore.viewMode === 'card',
+    set: (value) => {
+        taskStore.setViewMode(value ? 'card' : 'list');
+    }
+});
+
+
+const togglePagination = async () => {
+    await taskStore.fetchTasks(taskStore.filters);
+};
+
+
 const toggleView = () => {
-    taskStore.setViewMode(taskStore.viewMode === 'list' ? 'card' : 'list');
+    // isCardViewのsetterで処理されるため、ここでは何もしない
 };
 
 const draggedTasks = computed({
@@ -277,11 +274,6 @@ const draggedTasks = computed({
 const totalPages = computed(() => {
     return Math.ceil(taskStore.pagination.total / taskStore.pagination.perPage);
 });
-
-const togglePagination = async () => {
-    taskStore.setPaginationEnabled(!taskStore.pagination.enabled);
-    await taskStore.fetchTasks(taskStore.filters);
-};
 
 const selectedOrderId = ref('');
 const sortType = ref('');
