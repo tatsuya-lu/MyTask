@@ -32,7 +32,8 @@ class TaskController extends Controller
             'tag_ids',
             'start_date',
             'end_date',
-            'year'
+            'year',
+            'due_date_filter'
         ]);
 
         $query = $this->taskService->getFilteredTasks($filters);

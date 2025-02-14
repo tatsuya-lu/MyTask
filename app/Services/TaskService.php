@@ -83,6 +83,25 @@ class TaskService
             $query->where('priority', $filters['priority']);
         }
 
+        if (!empty($filters['due_date_filter'])) {
+            $filter = is_array($filters['due_date_filter'])
+                ? $filters['due_date_filter']
+                : json_decode($filters['due_date_filter'], true);
+
+            if ($filter) {
+                $now = now()->startOfDay();
+                $endDate = match ($filter['duration_unit']) {
+                    'day' => $now->copy()->addDays($filter['duration_value']),
+                    'week' => $now->copy()->addDays($filter['duration_value'] * 7),
+                    'month' => $now->copy()->addMonths($filter['duration_value']),
+                    default => $now
+                };
+
+                $query->whereNotNull('due_date')
+                    ->where('due_date', '<=', $endDate->endOfDay());
+            }
+        }
+
         if (isset($filters['is_archived'])) {
             $query->where('is_archived', $filters['is_archived']);
         }

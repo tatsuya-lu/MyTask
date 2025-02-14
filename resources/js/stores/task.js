@@ -110,30 +110,16 @@ export const useTaskStore = defineStore('task', {
                 const queryParams = {
                     paginate: this.pagination.enabled,
                     per_page: this.pagination.perPage,
-                    page: this.pagination.currentPage
+                    page: this.pagination.currentPage,
+                    ...filters
                 };
 
-                // フィルターの整形
-                if (filters.status) queryParams.status = filters.status;
-                if (filters.priority) queryParams.priority = filters.priority;
-                if (filters.tag_ids) queryParams.tag_ids = Array.isArray(filters.tag_ids)
-                    ? filters.tag_ids
-                    : [filters.tag_ids];
-                if (filters.dueDateFilter) queryParams.dueDateFilter = filters.dueDateFilter;
+                // 期限日フィルターが存在する場合、JSONとしてシリアライズ
+                if (filters.dueDateFilter) {
+                    queryParams.due_date_filter = JSON.stringify(filters.dueDateFilter);
+                }
 
-                const response = await axios.get('/api/tasks', {
-                    params: queryParams,
-                    paramsSerializer: params => {
-                        return Object.entries(params)
-                            .map(([key, value]) => {
-                                if (Array.isArray(value)) {
-                                    return value.map(v => `${key}[]=${v}`).join('&');
-                                }
-                                return `${key}=${value}`;
-                            })
-                            .join('&');
-                    }
-                });
+                const response = await axios.get('/api/tasks', { params: queryParams });
 
                 if (this.pagination.enabled) {
                     this.tasks = response.data.data;
@@ -142,7 +128,7 @@ export const useTaskStore = defineStore('task', {
                 } else {
                     this.tasks = response.data.data;
                 }
-
+                
                 this.isCustomOrder = response.data.isCustomOrder || false;
             } catch (error) {
                 console.error('Error fetching tasks:', error);

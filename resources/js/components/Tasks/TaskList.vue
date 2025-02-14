@@ -343,7 +343,6 @@ const confirmDeleteFilter = async (filter) => {
 
 const handleFilterChange = async () => {
     try {
-        // ページを1にリセット
         taskStore.pagination.currentPage = 1;
 
         // フィルターをセット
@@ -362,8 +361,8 @@ const handleFilterChange = async () => {
         await taskStore.fetchTasks({
             status: selectedStatus.value || null,
             priority: selectedPriority.value || null,
-            tag_ids: selectedTagId.value || null,
-            dueDateFilter: selectedDueDateFilter.value || null
+            tag_ids: selectedTagId.value ? [selectedTagId.value] : null,
+            due_date_filter: selectedDueDateFilter.value || null
         });
     } catch (error) {
         console.error('Filter application failed:', error);
