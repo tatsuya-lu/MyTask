@@ -107,31 +107,46 @@ export const useTaskStore = defineStore('task', {
         async fetchTasks(filters = {}) {
             this.isLoading = true;
             try {
-                const queryParams = new URLSearchParams({
-                    ...filters,
+                const queryParams = {
                     paginate: this.pagination.enabled,
                     per_page: this.pagination.perPage,
                     page: this.pagination.currentPage
-                }).toString();
+                };
 
-                const response = await axios.get(`/api/tasks?${queryParams}`);
+                // フィルターの整形
+                if (filters.status) queryParams.status = filters.status;
+                if (filters.priority) queryParams.priority = filters.priority;
+                if (filters.tag_ids) queryParams.tag_ids = Array.isArray(filters.tag_ids)
+                    ? filters.tag_ids
+                    : [filters.tag_ids];
+                if (filters.dueDateFilter) queryParams.dueDateFilter = filters.dueDateFilter;
+
+                const response = await axios.get('/api/tasks', {
+                    params: queryParams,
+                    paramsSerializer: params => {
+                        return Object.entries(params)
+                            .map(([key, value]) => {
+                                if (Array.isArray(value)) {
+                                    return value.map(v => `${key}[]=${v}`).join('&');
+                                }
+                                return `${key}=${value}`;
+                            })
+                            .join('&');
+                    }
+                });
 
                 if (this.pagination.enabled) {
-                    this.tasks = response.data.data.map(task => ({
-                        ...task,
-                        tags: task.tags || []
-                    }));
+                    this.tasks = response.data.data;
                     this.pagination.total = response.data.meta.total;
+                    this.pagination.currentPage = response.data.meta.current_page;
                 } else {
-                    this.tasks = response.data.data.map(task => ({
-                        ...task,
-                        tags: task.tags || []
-                    }));
+                    this.tasks = response.data.data;
                 }
+
                 this.isCustomOrder = response.data.isCustomOrder || false;
             } catch (error) {
+                console.error('Error fetching tasks:', error);
                 this.error = error.response?.data?.message || 'タスクの取得に失敗しました';
-                throw error;
             } finally {
                 this.isLoading = false;
             }

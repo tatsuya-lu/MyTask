@@ -341,11 +341,33 @@ const confirmDeleteFilter = async (filter) => {
     }
 };
 
-const handleFilterChange = () => {
-    taskStore.setFilter('status', selectedStatus.value);
-    taskStore.setFilter('priority', selectedPriority.value);
-    taskStore.setFilter('tagId', selectedTagId.value);
-    taskStore.setFilter('dueDateFilter', selectedDueDateFilter.value);
+const handleFilterChange = async () => {
+    try {
+        // ページを1にリセット
+        taskStore.pagination.currentPage = 1;
+
+        // フィルターをセット
+        taskStore.setFilter('status', selectedStatus.value);
+        taskStore.setFilter('priority', selectedPriority.value);
+        taskStore.setFilter('tagId', selectedTagId.value);
+        taskStore.setFilter('dueDateFilter', selectedDueDateFilter.value);
+
+        // カスタム並び順をリセット
+        if (taskStore.isCustomOrder) {
+            taskStore.isCustomOrder = false;
+            taskStore.currentOrderId = null;
+        }
+
+        // タスクを再取得
+        await taskStore.fetchTasks({
+            status: selectedStatus.value || null,
+            priority: selectedPriority.value || null,
+            tag_ids: selectedTagId.value || null,
+            dueDateFilter: selectedDueDateFilter.value || null
+        });
+    } catch (error) {
+        console.error('Filter application failed:', error);
+    }
 };
 
 const handleSavedOrderSelect = async () => {
