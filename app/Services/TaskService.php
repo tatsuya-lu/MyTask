@@ -87,16 +87,19 @@ class TaskService
             $filter = is_array($filters['due_date_filter'])
                 ? $filters['due_date_filter']
                 : json_decode($filters['due_date_filter'], true);
-
+        
             if ($filter) {
                 $now = now()->startOfDay();
+                // duration_valueを整数に変換
+                $durationValue = (int)$filter['duration_value'];
+                
                 $endDate = match ($filter['duration_unit']) {
-                    'day' => $now->copy()->addDays($filter['duration_value']),
-                    'week' => $now->copy()->addDays($filter['duration_value'] * 7),
-                    'month' => $now->copy()->addMonths($filter['duration_value']),
+                    'day' => $now->copy()->addDays($durationValue),
+                    'week' => $now->copy()->addDays($durationValue * 7),
+                    'month' => $now->copy()->addMonths($durationValue),
                     default => $now
                 };
-
+        
                 $query->whereNotNull('due_date')
                     ->where('due_date', '<=', $endDate->endOfDay());
             }

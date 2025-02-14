@@ -83,7 +83,21 @@ export const useTaskStore = defineStore('task', {
             }
 
             return filtered;
-        }
+        },
+        defaultFilters: () => [
+            {
+                id: 'week',
+                name: '1週間以内',
+                duration_value: 1,  // 文字列ではなく数値として定義
+                duration_unit: 'week'
+            },
+            {
+                id: 'month',
+                name: '1ヶ月以内',
+                duration_value: 1,  // 文字列ではなく数値として定義
+                duration_unit: 'month'
+            }
+        ]
     },
 
     actions: {
@@ -128,7 +142,7 @@ export const useTaskStore = defineStore('task', {
                 } else {
                     this.tasks = response.data.data;
                 }
-                
+
                 this.isCustomOrder = response.data.isCustomOrder || false;
             } catch (error) {
                 console.error('Error fetching tasks:', error);
